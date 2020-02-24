@@ -12,10 +12,6 @@ enum {
     PARTS_NR
 };
 
-enum {
-    MODE_RECT,
-};
-
 struct parts_t {
     struct parts_t *next, *back;
     
@@ -159,6 +155,22 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 
 /****/
 
+enum {
+    MODE_EDIT,
+    MODE_RECT,
+};
+
+static int mode = MODE_EDIT;
+
+static void button_event_edit(GdkEvent *ev)
+{
+    static int step = 0;
+    switch (step) {
+	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	}
+    }
+}
+
 static void button_event_rect(GdkEvent *ev)
 {
     static int step = 0;
@@ -193,7 +205,19 @@ static void button_event_rect(GdkEvent *ev)
 
 static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 {
-    button_event_rect(ev);
+    switch (mode) {
+    case MODE_EDIT:
+	button_event_edit(ev);
+	break;
+    case MODE_RECT:
+	button_event_rect(ev);
+	break;
+    }
+}
+
+static void mode_cb(GtkToolButton *item, gpointer user_data)
+{
+    mode = GPOINTER_TO_INT(user_data);
 }
 
 int main(int argc, char **argv)
@@ -230,12 +254,34 @@ int main(int argc, char **argv)
     toplevel = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_show(toplevel);
     
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(toplevel), vbox);
+    gtk_widget_show(vbox);
+    
+    GtkWidget *toolbar = gtk_toolbar_new();
+    gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
+    gtk_widget_show(toolbar);
+    {
+	GtkToolItem *item = gtk_tool_button_new(NULL, "ok");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "text-editor");
+	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_EDIT));
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
+    {
+	GtkToolItem *item = gtk_tool_button_new(NULL, "rectangle");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "media-playback-stop");
+	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_RECT));
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
+    
     GtkWidget *evbox = gtk_event_box_new();
     g_signal_connect(G_OBJECT(evbox), "button-press-event", G_CALLBACK(button_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "button-release-event", G_CALLBACK(button_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "motion-notify-event", G_CALLBACK(button_event), NULL);
     gtk_widget_show(evbox);
-    gtk_container_add(GTK_CONTAINER(toplevel), evbox);
+    gtk_box_pack_start(GTK_BOX(vbox), evbox, TRUE, TRUE, 0);
     
     drawable = gtk_drawing_area_new();
     g_signal_connect(G_OBJECT(drawable), "draw", G_CALLBACK(draw), NULL);
