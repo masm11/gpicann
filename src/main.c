@@ -12,6 +12,10 @@ enum {
     PARTS_NR
 };
 
+enum {
+    MODE_RECT,
+};
+
 struct parts_t {
     struct parts_t *next, *back;
     
@@ -89,6 +93,13 @@ static struct history_t *history_dup(struct history_t *orig)
     return hp;
 }
 
+static void history_copy_top_of_undoable(void)
+{
+    struct history_t *hp = history_dup(undoable);
+    hp->next = undoable;
+    undoable = hp;
+}
+
 /****/
 
 static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gpointer user_data)
@@ -114,6 +125,7 @@ static struct parts_t *rect_create(int x, int y)
     p->y = y;
     p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
     p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
+    
     return p;
 }
 
@@ -143,6 +155,45 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 	}
 	cairo_restore(cr);
     }
+}
+
+/****/
+
+static void button_event_rect(GdkEvent *ev)
+{
+    static int step = 0;
+    
+    switch (step) {
+    case 0:
+	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	    history_copy_top_of_undoable();
+	    struct history_t *hp = undoable;
+	    
+	    struct parts_t *p = rect_create(ev->button.x, ev->button.y);
+	    history_append_parts(hp, p);
+	    
+	    step++;
+	}
+	break;
+	
+    case 1:
+	if (ev->type == GDK_MOTION_NOTIFY) {
+	    undoable->parts_list_end->width = ev->motion.x - undoable->parts_list_end->x;
+	    undoable->parts_list_end->height = ev->motion.y - undoable->parts_list_end->y;
+	    gtk_widget_queue_draw(drawable);
+	} else if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    undoable->parts_list_end->width = ev->button.x - undoable->parts_list_end->x;
+	    undoable->parts_list_end->height = ev->button.y - undoable->parts_list_end->y;
+	    gtk_widget_queue_draw(drawable);
+	    step = 0;
+	}
+	break;
+    }
+}
+
+static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
+{
+    button_event_rect(ev);
 }
 
 int main(int argc, char **argv)
@@ -179,18 +230,18 @@ int main(int argc, char **argv)
     toplevel = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_show(toplevel);
     
+    GtkWidget *evbox = gtk_event_box_new();
+    g_signal_connect(G_OBJECT(evbox), "button-press-event", G_CALLBACK(button_event), NULL);
+    g_signal_connect(G_OBJECT(evbox), "button-release-event", G_CALLBACK(button_event), NULL);
+    g_signal_connect(G_OBJECT(evbox), "motion-notify-event", G_CALLBACK(button_event), NULL);
+    gtk_widget_show(evbox);
+    gtk_container_add(GTK_CONTAINER(toplevel), evbox);
+    
     drawable = gtk_drawing_area_new();
     g_signal_connect(G_OBJECT(drawable), "draw", G_CALLBACK(draw), NULL);
     gtk_widget_show(drawable);
-    gtk_container_add(GTK_CONTAINER(toplevel), drawable);
+    gtk_container_add(GTK_CONTAINER(evbox), drawable);
     
-    struct history_t *hp = history_dup(undoable);
-    hp->next = undoable;
-    undoable = hp;
-    struct parts_t *p = rect_create(20, 30);
-    p->width = 30;
-    p->height = 20;
-    history_append_parts(hp, p);
     
     gtk_main();
     return 0;
