@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
+#include <math.h>
 
 #include "common.h"
 #include "shapes.h"
@@ -72,6 +73,22 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
 
 void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
+#define DIFF 3.0
+#define NR 8
+
+    for (int i = 0; i < NR; i++) {
+	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
+	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
+	cairo_save(cr);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05);
+	cairo_rectangle(cr, parts->x + dx, parts->y + dy, parts->width, parts->height);
+	cairo_fill(cr);
+	cairo_restore(cr);
+    }
+
+#undef NR
+#undef DIFF
+
     cairo_set_source_rgba(cr, parts->fg.r, parts->fg.g, parts->fg.b, parts->fg.a);
     cairo_rectangle(cr, parts->x, parts->y, parts->width, parts->height);
     cairo_fill(cr);
@@ -158,7 +175,7 @@ void rect_drag_step(struct parts_t *p, int x, int y)
     case HANDLE_BOTTOM_RIGHT:
 	p->width = orig_w + dx;
     }
-
+    
     switch (dragging_handle) {
     case HANDLE_TOP_LEFT:
     case HANDLE_TOP:
@@ -166,7 +183,7 @@ void rect_drag_step(struct parts_t *p, int x, int y)
 	p->y = orig_y + dy;
 	p->height = orig_h - dy;
     }
-
+    
     switch (dragging_handle) {
     case HANDLE_BOTTOM_LEFT:
     case HANDLE_BOTTOM:
