@@ -119,7 +119,7 @@ static void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_fill(cr);
 }
 
-static void rect_draw_marker(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+static void rect_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
     struct {
 	int x;
@@ -179,13 +179,13 @@ static struct parts_t *rect_create(int x, int y)
 
 struct {
     void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
-    void (*draw_marker)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+    void (*draw_handle)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
     gboolean (*select)(struct parts_t *parts, int x, int y);
 } parts_ops[PARTS_NR] = {
     { base_draw, NULL, base_select },
     { },
     { },
-    { rect_draw, rect_draw_marker, rect_select },
+    { rect_draw, rect_draw_handle, rect_select },
 };
 
 static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
@@ -207,8 +207,8 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
     if ((lp = undoable->selp) != NULL) {
 	cairo_save(cr);
 	if (lp->type >= 0 && lp->type < PARTS_NR) {
-	    if (parts_ops[lp->type].draw_marker != NULL)
-		(parts_ops[lp->type].draw_marker)(lp, drawable, cr);
+	    if (parts_ops[lp->type].draw_handle != NULL)
+		(parts_ops[lp->type].draw_handle)(lp, drawable, cr);
 	} else {
 	    fprintf(stderr, "unknown parts type: %d.\n", lp->type);
 	    exit(1);
@@ -269,12 +269,14 @@ static void button_event_edit(GdkEvent *ev)
 		dx = -dx;
 	    if (dy < 0)
 		dy = -dy;
-	    if (dx >= 3 || dy >= 3) {
+#define EPSILON 3
+	    if (dx >= EPSILON || dy >= EPSILON) {
 		orig_x = undoable->selp->x;
 		orig_y = undoable->selp->y;
 		step++;
 		break;
 	    }
+#undef EPSILON
 	}
 	break;
 	
@@ -315,11 +317,14 @@ static void button_event_rect(GdkEvent *ev)
 	    undoable->parts_list_end->width = ev->motion.x - undoable->parts_list_end->x;
 	    undoable->parts_list_end->height = ev->motion.y - undoable->parts_list_end->y;
 	    gtk_widget_queue_draw(drawable);
-	} else if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    break;
+	}
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
 	    undoable->parts_list_end->width = ev->button.x - undoable->parts_list_end->x;
 	    undoable->parts_list_end->height = ev->button.y - undoable->parts_list_end->y;
 	    gtk_widget_queue_draw(drawable);
 	    step = 0;
+	    break;
 	}
 	break;
     }
