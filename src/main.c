@@ -39,6 +39,7 @@ struct parts_t {
 struct history_t {
     struct history_t *next;
     struct parts_t *parts_list, *parts_list_end;
+    struct parts_t *selp;
 };
 static struct history_t *undoable, *redoable;
 
@@ -98,19 +99,68 @@ static void history_copy_top_of_undoable(void)
 
 /****/
 
-static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gpointer user_data)
+static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
     gdk_cairo_set_source_pixbuf(cr, parts->pixbuf, 0, 0);
     cairo_paint(cr);
 }
 
+static gboolean base_select(struct parts_t *parts, int x, int y)
+{
+    return TRUE;
+}
+
 /****/
 
-static void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gpointer user_data)
+static void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
     cairo_set_source_rgba(cr, parts->fg.r, parts->fg.g, parts->fg.b, parts->fg.a);
     cairo_rectangle(cr, parts->x, parts->y, parts->width, parts->height);
     cairo_fill(cr);
+}
+
+static void rect_draw_marker(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+{
+    struct {
+	int x;
+	int y;
+    } poses[] = {
+	{ parts->x,                parts->y },
+	{ parts->x + parts->width, parts->y },
+	{ parts->x,                parts->y + parts->height },
+	{ parts->x + parts->width, parts->y + parts->height },
+    };
+    
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+    for (int i = 0; i < 4; i++) {
+	cairo_rectangle(cr, poses[i].x - 5, poses[i].y - 5, 10, 10);
+	cairo_stroke(cr);
+    }
+    cairo_restore(cr);
+}
+
+static gboolean rect_select(struct parts_t *parts, int x, int y)
+{
+    int x1, x2, y1, y2, t;
+    
+    x1 = parts->x;
+    x2 = x1 + parts->width;
+    y1 = parts->y;
+    y2 = y1 + parts->height;
+    
+    if (x2 < x1) {
+	t = x1;
+	x1 = x2;
+	x2 = t;
+    }
+    if (y2 < y1) {
+	t = y1;
+	y1 = y2;
+	y2 = t;
+    }
+
+    return x >= x1 && x < x2 && y >= y1 && y < y2;
 }
 
 static struct parts_t *rect_create(int x, int y)
@@ -128,12 +178,14 @@ static struct parts_t *rect_create(int x, int y)
 /****/
 
 struct {
-    void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gpointer user_data);
+    void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+    void (*draw_marker)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+    gboolean (*select)(struct parts_t *parts, int x, int y);
 } parts_ops[PARTS_NR] = {
-    { base_draw },
+    { base_draw, NULL, base_select },
     { },
     { },
-    { rect_draw },
+    { rect_draw, rect_draw_marker, rect_select },
 };
 
 static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
@@ -144,7 +196,19 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 	cairo_save(cr);
 	if (lp->type >= 0 && lp->type < PARTS_NR) {
 	    if (parts_ops[lp->type].draw != NULL)
-		(parts_ops[lp->type].draw)(lp, drawable, cr, user_data);
+		(parts_ops[lp->type].draw)(lp, drawable, cr);
+	} else {
+	    fprintf(stderr, "unknown parts type: %d.\n", lp->type);
+	    exit(1);
+	}
+	cairo_restore(cr);
+    }
+    
+    if ((lp = undoable->selp) != NULL) {
+	cairo_save(cr);
+	if (lp->type >= 0 && lp->type < PARTS_NR) {
+	    if (parts_ops[lp->type].draw_marker != NULL)
+		(parts_ops[lp->type].draw_marker)(lp, drawable, cr);
 	} else {
 	    fprintf(stderr, "unknown parts type: %d.\n", lp->type);
 	    exit(1);
@@ -165,9 +229,67 @@ static int mode = MODE_EDIT;
 static void button_event_edit(GdkEvent *ev)
 {
     static int step = 0;
+    static int beg_x = 0, beg_y = 0;
+    static int orig_x = 0, orig_y = 0;
+    
     switch (step) {
+    case 0:
 	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	    struct parts_t *selp = NULL;
+	    for (struct parts_t *p = undoable->parts_list; p != NULL; p = p->next) {
+		if (p->type >= 0 && p->type < PARTS_NR) {
+		    if (parts_ops[p->type].select != NULL) {
+			if ((parts_ops[p->type].select)(p, ev->button.x, ev->button.y))
+			    selp = p;
+		    }
+		} else {
+		    fprintf(stderr, "unknown parts type: %d.\n", p->type);
+		    exit(1);
+		}
+	    }
+	    if (selp != NULL) {
+		undoable->selp = selp;
+		gtk_widget_queue_draw(drawable);
+		beg_x = ev->button.x;
+		beg_y = ev->button.y;
+		step++;
+	    }
 	}
+	break;
+	
+    case 1:
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    step = 0;
+	    break;
+	}
+	if (ev->type == GDK_MOTION_NOTIFY) {
+	    int dx = ev->motion.x - beg_x;
+	    int dy = ev->motion.y - beg_y;
+	    if (dx < 0)
+		dx = -dx;
+	    if (dy < 0)
+		dy = -dy;
+	    if (dx >= 3 || dy >= 3) {
+		orig_x = undoable->selp->x;
+		orig_y = undoable->selp->y;
+		step++;
+		break;
+	    }
+	}
+	break;
+	
+    case 2:
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    step = 0;
+	    break;
+	}
+	if (ev->type == GDK_MOTION_NOTIFY) {
+	    undoable->selp->x = orig_x + (ev->motion.x - beg_x);
+	    undoable->selp->y = orig_y + (ev->motion.y - beg_y);
+	    gtk_widget_queue_draw(drawable);
+	    break;
+	}
+	break;
     }
 }
 
