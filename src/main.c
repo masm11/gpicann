@@ -327,6 +327,7 @@ int main(int argc, char **argv)
     redoable = NULL;
     
     toplevel = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    g_signal_connect(G_OBJECT(toplevel), "delete-event", G_CALLBACK(exit), 0);
     gtk_widget_show(toplevel);
     
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
