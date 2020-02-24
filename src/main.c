@@ -1,30 +1,10 @@
 #include <stdio.h>
 #include <gtk/gtk.h>
 
+#include "common.h"
+#include "shapes.h"
+
 static GtkWidget *toplevel;
-
-enum {
-    PARTS_BASE,
-    PARTS_LINE,    // 矢印含む
-    PARTS_TEXT,
-    PARTS_RECT,
-
-    PARTS_NR
-};
-
-struct parts_t {
-    struct parts_t *next, *back;
-    
-    int type;
-    int x, y, width, height;
-    int arrow_type;
-    char *text;
-    struct color_t {
-	double r, g, b, a;
-    } fg, bg;
-    
-    GdkPixbuf *pixbuf;
-};
 
 /* undoable の先頭が現在の状態。
  * 操作開始時に undoable の先頭を deep copy して、undoable の前に追加。
@@ -36,25 +16,20 @@ struct parts_t {
  *
  * ステップ数が少ないことが前提の構造。
  */
-struct history_t {
-    struct history_t *next;
-    struct parts_t *parts_list, *parts_list_end;
-    struct parts_t *selp;
-};
 static struct history_t *undoable, *redoable;
 
 static GtkWidget *drawable;
 
 /**** parts ****/
 
-static struct parts_t *parts_alloc(void)
+struct parts_t *parts_alloc(void)
 {
     struct parts_t *p = malloc(sizeof *p);
     memset(p, 0, sizeof *p);
     return p;
 }
 
-static struct parts_t *parts_dup(struct parts_t *orig)
+struct parts_t *parts_dup(struct parts_t *orig)
 {
     struct parts_t *p = malloc(sizeof *p);
     *p = *orig;
@@ -108,71 +83,6 @@ static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 static gboolean base_select(struct parts_t *parts, int x, int y)
 {
     return TRUE;
-}
-
-/****/
-
-static void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
-{
-    cairo_set_source_rgba(cr, parts->fg.r, parts->fg.g, parts->fg.b, parts->fg.a);
-    cairo_rectangle(cr, parts->x, parts->y, parts->width, parts->height);
-    cairo_fill(cr);
-}
-
-static void rect_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
-{
-    struct {
-	int x;
-	int y;
-    } poses[] = {
-	{ parts->x,                parts->y },
-	{ parts->x + parts->width, parts->y },
-	{ parts->x,                parts->y + parts->height },
-	{ parts->x + parts->width, parts->y + parts->height },
-    };
-    
-    cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < 4; i++) {
-	cairo_rectangle(cr, poses[i].x - 5, poses[i].y - 5, 10, 10);
-	cairo_stroke(cr);
-    }
-    cairo_restore(cr);
-}
-
-static gboolean rect_select(struct parts_t *parts, int x, int y)
-{
-    int x1, x2, y1, y2, t;
-    
-    x1 = parts->x;
-    x2 = x1 + parts->width;
-    y1 = parts->y;
-    y2 = y1 + parts->height;
-    
-    if (x2 < x1) {
-	t = x1;
-	x1 = x2;
-	x2 = t;
-    }
-    if (y2 < y1) {
-	t = y1;
-	y1 = y2;
-	y2 = t;
-    }
-
-    return x >= x1 && x < x2 && y >= y1 && y < y2;
-}
-
-static struct parts_t *rect_create(int x, int y)
-{
-    struct parts_t *p = parts_alloc();
-    p->type = PARTS_RECT;
-    p->x = x;
-    p->y = y;
-    p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
-    p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
-    
-    return p;
 }
 
 /****/
