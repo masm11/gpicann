@@ -4,6 +4,8 @@
 #include "common.h"
 #include "shapes.h"
 
+static int beg_x = 0, beg_y = 0;
+static int orig_x = 0, orig_y = 0;
 
 void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
@@ -33,7 +35,7 @@ void rect_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_restore(cr);
 }
 
-gboolean rect_select(struct parts_t *parts, int x, int y)
+gboolean rect_select(struct parts_t *parts, int x, int y, gboolean selected)
 {
     int x1, x2, y1, y2, t;
     
@@ -53,7 +55,24 @@ gboolean rect_select(struct parts_t *parts, int x, int y)
 	y2 = t;
     }
     
+    beg_x = x;
+    beg_y = y;
+    orig_x = parts->x;
+    orig_y = parts->y;
+    
     return x >= x1 && x < x2 && y >= y1 && y < y2;
+}
+
+void rect_drag_step(struct parts_t *parts, int x, int y)
+{
+    parts->x = orig_x + (x - beg_x);
+    parts->y = orig_y + (y - beg_y);
+    printf("step\n");
+}
+
+void rect_drag_fini(struct parts_t *parts, int x, int y)
+{
+    printf("fini\n");
 }
 
 struct parts_t *rect_create(int x, int y)

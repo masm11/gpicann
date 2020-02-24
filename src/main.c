@@ -80,7 +80,7 @@ static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_paint(cr);
 }
 
-static gboolean base_select(struct parts_t *parts, int x, int y)
+static gboolean base_select(struct parts_t *parts, int x, int y, gboolean selected)
 {
     return TRUE;
 }
@@ -90,13 +90,68 @@ static gboolean base_select(struct parts_t *parts, int x, int y)
 struct {
     void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
     void (*draw_handle)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
-    gboolean (*select)(struct parts_t *parts, int x, int y);
+    gboolean (*select)(struct parts_t *parts, int x, int y, gboolean selected);
+    void (*drag_step)(struct parts_t *parts, int x, int y);
+    void (*drag_fini)(struct parts_t *parts, int x, int y);
 } parts_ops[PARTS_NR] = {
     { base_draw, NULL, base_select },
     { },
     { },
-    { rect_draw, rect_draw_handle, rect_select },
+    { rect_draw, rect_draw_handle, rect_select, rect_drag_step, rect_drag_fini },
 };
+
+static inline void call_draw(struct parts_t *p, GtkWidget *drawable, cairo_t *cr)
+{
+    if (p->type < 0 || p->type >= PARTS_NR) {
+	fprintf(stderr, "unknown parts type: %d.\n", p->type);
+	exit(1);
+    }
+    if (parts_ops[p->type].draw != NULL)
+	(parts_ops[p->type].draw)(p, drawable, cr);
+}
+
+static inline void call_draw_handle(struct parts_t *p, GtkWidget *drawable, cairo_t *cr)
+{
+    if (p->type < 0 || p->type >= PARTS_NR) {
+	fprintf(stderr, "unknown parts type: %d.\n", p->type);
+	exit(1);
+    }
+    if (parts_ops[p->type].draw_handle != NULL)
+	(parts_ops[p->type].draw_handle)(p, drawable, cr);
+}
+
+static inline gboolean call_select(struct parts_t *p, int x, int y, gboolean selected)
+{
+    if (p->type < 0 || p->type >= PARTS_NR) {
+	fprintf(stderr, "unknown parts type: %d.\n", p->type);
+	exit(1);
+    }
+    if (parts_ops[p->type].select != NULL)
+	return (parts_ops[p->type].select)(p, x, y, selected);
+    return FALSE;
+}
+
+static inline void call_drag_step(struct parts_t *p, int x, int y)
+{
+    if (p->type < 0 || p->type >= PARTS_NR) {
+	fprintf(stderr, "unknown parts type: %d.\n", p->type);
+	exit(1);
+    }
+    if (parts_ops[p->type].drag_step != NULL)
+	(parts_ops[p->type].drag_step)(p, x, y);
+}
+
+static inline void call_drag_fini(struct parts_t *p, int x, int y)
+{
+    if (p->type < 0 || p->type >= PARTS_NR) {
+	fprintf(stderr, "unknown parts type: %d.\n", p->type);
+	exit(1);
+    }
+    if (parts_ops[p->type].drag_fini != NULL)
+	(parts_ops[p->type].drag_fini)(p, x, y);
+}
+
+/****/
 
 static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 {
@@ -104,25 +159,13 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
     
     for (lp = undoable->parts_list; lp != NULL; lp = lp->next) {
 	cairo_save(cr);
-	if (lp->type >= 0 && lp->type < PARTS_NR) {
-	    if (parts_ops[lp->type].draw != NULL)
-		(parts_ops[lp->type].draw)(lp, drawable, cr);
-	} else {
-	    fprintf(stderr, "unknown parts type: %d.\n", lp->type);
-	    exit(1);
-	}
+	call_draw(lp, drawable, cr);
 	cairo_restore(cr);
     }
     
     if ((lp = undoable->selp) != NULL) {
 	cairo_save(cr);
-	if (lp->type >= 0 && lp->type < PARTS_NR) {
-	    if (parts_ops[lp->type].draw_handle != NULL)
-		(parts_ops[lp->type].draw_handle)(lp, drawable, cr);
-	} else {
-	    fprintf(stderr, "unknown parts type: %d.\n", lp->type);
-	    exit(1);
-	}
+	call_draw_handle(lp, drawable, cr);
 	cairo_restore(cr);
     }
 }
@@ -140,29 +183,17 @@ static void button_event_edit(GdkEvent *ev)
 {
     static int step = 0;
     static int beg_x = 0, beg_y = 0;
-    static int orig_x = 0, orig_y = 0;
     
     switch (step) {
     case 0:
 	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    struct parts_t *selp = NULL;
-	    for (struct parts_t *p = undoable->parts_list; p != NULL; p = p->next) {
-		if (p->type >= 0 && p->type < PARTS_NR) {
-		    if (parts_ops[p->type].select != NULL) {
-			if ((parts_ops[p->type].select)(p, ev->button.x, ev->button.y))
-			    selp = p;
-		    }
-		} else {
-		    fprintf(stderr, "unknown parts type: %d.\n", p->type);
-		    exit(1);
+	    GdkEventButton *ep = &ev->button;
+	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
+		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
+		    undoable->selp = p;
+		    step++;
+		    break;
 		}
-	    }
-	    if (selp != NULL) {
-		undoable->selp = selp;
-		gtk_widget_queue_draw(drawable);
-		beg_x = ev->button.x;
-		beg_y = ev->button.y;
-		step++;
 	    }
 	}
 	break;
@@ -173,16 +204,17 @@ static void button_event_edit(GdkEvent *ev)
 	    break;
 	}
 	if (ev->type == GDK_MOTION_NOTIFY) {
-	    int dx = ev->motion.x - beg_x;
-	    int dy = ev->motion.y - beg_y;
+	    GdkEventMotion *ep = &ev->motion;
+	    int dx = ep->x - beg_x;
+	    int dy = ep->y - beg_y;
 	    if (dx < 0)
 		dx = -dx;
 	    if (dy < 0)
 		dy = -dy;
 #define EPSILON 3
 	    if (dx >= EPSILON || dy >= EPSILON) {
-		orig_x = undoable->selp->x;
-		orig_y = undoable->selp->y;
+		struct parts_t *p = undoable->selp;
+		call_drag_step(p, ep->x, ep->y);
 		step++;
 		break;
 	    }
@@ -192,17 +224,23 @@ static void button_event_edit(GdkEvent *ev)
 	
     case 2:
 	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    GdkEventButton *ep = &ev->button;
+	    struct parts_t *p = undoable->selp;
+	    call_drag_step(p, ep->x, ep->y);
+	    call_drag_fini(p, ep->x, ep->y);
 	    step = 0;
 	    break;
 	}
 	if (ev->type == GDK_MOTION_NOTIFY) {
-	    undoable->selp->x = orig_x + (ev->motion.x - beg_x);
-	    undoable->selp->y = orig_y + (ev->motion.y - beg_y);
-	    gtk_widget_queue_draw(drawable);
+	    GdkEventMotion *ep = &ev->motion;
+	    struct parts_t *p = undoable->selp;
+	    call_drag_step(p, ep->x, ep->y);
 	    break;
 	}
 	break;
     }
+    
+    gtk_widget_queue_draw(drawable);
 }
 
 static void button_event_rect(GdkEvent *ev)
