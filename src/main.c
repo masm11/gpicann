@@ -95,7 +95,7 @@ struct {
     void (*drag_fini)(struct parts_t *parts, int x, int y);
 } parts_ops[PARTS_NR] = {
     { base_draw, NULL, base_select },
-    { },
+    { arrow_draw },
     { },
     { rect_draw, rect_draw_handle, rect_select, rect_drag_step, rect_drag_fini },
 };
@@ -175,6 +175,7 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 enum {
     MODE_EDIT,
     MODE_RECT,
+    MODE_ARROW,
 };
 
 static int mode = MODE_EDIT;
@@ -278,6 +279,41 @@ static void button_event_rect(GdkEvent *ev)
     }
 }
 
+static void button_event_arrow(GdkEvent *ev)
+{
+    static int step = 0;
+    
+    switch (step) {
+    case 0:
+	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	    history_copy_top_of_undoable();
+	    struct history_t *hp = undoable;
+	    
+	    struct parts_t *p = arrow_create(ev->button.x, ev->button.y);
+	    history_append_parts(hp, p);
+	    
+	    step++;
+	}
+	break;
+	
+    case 1:
+	if (ev->type == GDK_MOTION_NOTIFY) {
+	    undoable->parts_list_end->width = ev->motion.x - undoable->parts_list_end->x;
+	    undoable->parts_list_end->height = ev->motion.y - undoable->parts_list_end->y;
+	    gtk_widget_queue_draw(drawable);
+	    break;
+	}
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    undoable->parts_list_end->width = ev->button.x - undoable->parts_list_end->x;
+	    undoable->parts_list_end->height = ev->button.y - undoable->parts_list_end->y;
+	    gtk_widget_queue_draw(drawable);
+	    step = 0;
+	    break;
+	}
+	break;
+    }
+}
+
 static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 {
     switch (mode) {
@@ -286,6 +322,9 @@ static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 	break;
     case MODE_RECT:
 	button_event_rect(ev);
+	break;
+    case MODE_ARROW:
+	button_event_arrow(ev);
 	break;
     }
 }
@@ -348,6 +387,13 @@ int main(int argc, char **argv)
 	GtkToolItem *item = gtk_tool_button_new(NULL, "rectangle");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "media-playback-stop");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_RECT));
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
+    {
+	GtkToolItem *item = gtk_tool_button_new(NULL, "arrow");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "media-playlist-consecutive");
+	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_ARROW));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }

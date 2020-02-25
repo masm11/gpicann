@@ -3,7 +3,7 @@
 
 enum {
     PARTS_BASE,
-    PARTS_LINE,    // 矢印含む
+    PARTS_ARROW,
     PARTS_TEXT,
     PARTS_RECT,
 
@@ -16,6 +16,9 @@ struct parts_t {
     int type;
     int x, y, width, height;
     int arrow_type;
+    int thickness;
+    int triangle_len;
+    double theta;
     char *text;
     struct color_t {
 	double r, g, b, a;
