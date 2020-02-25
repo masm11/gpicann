@@ -16,10 +16,10 @@ enum {
      */
 
     HANDLE_POINT,
+    HANDLE_GRIP,
+    HANDLE_STEP,
     HANDLE_EDGE_L,
     HANDLE_EDGE_R,
-    HANDLE_STEP,
-    HANDLE_GRIP,
 
     HANDLE_NR
 };
@@ -29,49 +29,57 @@ static int orig_x = 0, orig_y = 0, orig_w = 0, orig_h = 0;
 static int dragging_handle = -1;
 
 struct handle_geom_t {
-    int x, y, width, height;
+    double cx, cy;
+    double x, y, width, height;
 };
 
 static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
 {
     struct handle_geom_t *bp = bufp;
     
-    bp->x = p->x;
-    bp->y = p->y;
+    /* point */
+    bp->cx = p->x + p->width;
+    bp->cy = p->y + p->height;
     bp++;
     
-    bp->x = p->x + p->width / 2;
-    bp->y = p->y;
+    /* grip */
+    bp->cx = p->x;
+    bp->cy = p->y;
     bp++;
     
-    bp->x = p->x + p->width;
-    bp->y = p->y;
+    /* step */
+    double total_len = sqrt(
+	    (bufp[HANDLE_POINT].cx - bufp[HANDLE_GRIP].cx) * (bufp[HANDLE_POINT].cx - bufp[HANDLE_GRIP].cx) +
+	    (bufp[HANDLE_POINT].cy - bufp[HANDLE_GRIP].cy) * (bufp[HANDLE_POINT].cy - bufp[HANDLE_GRIP].cy));
+    double triangle_len = p->triangle_len;
+    bp->cx = (bufp[HANDLE_GRIP].cx - bufp[HANDLE_POINT].cx) * triangle_len / total_len + bufp[HANDLE_POINT].cx;
+    bp->cy = (bufp[HANDLE_GRIP].cy - bufp[HANDLE_POINT].cy) * triangle_len / total_len + bufp[HANDLE_POINT].cy;
     bp++;
     
-    bp->x = p->x;
-    bp->y = p->y + p->height / 2;
+    /* edge_l */
+    double theta = p->theta;
+    double wide = triangle_len * tan(theta);
+    double v0x = bufp[HANDLE_GRIP].cx - bufp[HANDLE_POINT].cx;
+    double v0y = bufp[HANDLE_GRIP].cy - bufp[HANDLE_POINT].cy;
+    double v1x = -v0y;
+    double v1y = v0x;
+    double v1len = sqrt(v1x * v1x + v1y * v1y); // == total_len
+    bp->cx = wide * v1x / v1len + bufp[HANDLE_STEP].cx;
+    bp->cy = wide * v1y / v1len + bufp[HANDLE_STEP].cy;
     bp++;
     
-    bp->x = p->x + p->width;
-    bp->y = p->y + p->height / 2;
-    bp++;
-    
-    bp->x = p->x;
-    bp->y = p->y + p->height;
-    bp++;
-    
-    bp->x = p->x + p->width / 2;
-    bp->y = p->y + p->height;
-    bp++;
-    
-    bp->x = p->x + p->width;
-    bp->y = p->y + p->height;
+    /* edge_r */
+    int v2x = v0y;
+    int v2y = -v0x;
+    double v2len = sqrt(v2x * v2x + v2y * v2y); // == total_len
+    bp->cx = wide * v2x / v1len + bufp[HANDLE_STEP].cx;
+    bp->cy = wide * v2y / v1len + bufp[HANDLE_STEP].cy;
     bp++;
     
     for (int i = 0; i < HANDLE_NR; i++) {
 	bp = bufp + i;
-	bp->x -= 4;
-	bp->y -= 4;
+	bp->x = bp->cx - 4;
+	bp->y = bp->cy - 4;
 	bp->width = 8;
 	bp->height = 8;
     }
@@ -79,73 +87,37 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
 
 void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
+    struct handle_geom_t handles[HANDLE_NR];
+    make_handle_geoms(parts, handles);
+    
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-    
-    struct {
-	double x, y;
-    } coords[5];
-    
-    /* point */
-    coords[0].x = parts->x + parts->width;
-    coords[0].y = parts->y + parts->height;
-    
-    /* grip */
-    coords[1].x = parts->x;
-    coords[1].y = parts->y;
-    
-    /* step */
-    double total_len = sqrt(
-	    (coords[0].x - coords[1].x) * (coords[0].x - coords[1].x) +
-	    (coords[0].y - coords[1].y) * (coords[0].y - coords[1].y));
-    double triangle_len = parts->triangle_len;
-    coords[2].x = (coords[1].x - coords[0].x) * triangle_len / total_len + coords[0].x;
-    coords[2].y = (coords[1].y - coords[0].y) * triangle_len / total_len + coords[0].y;
-    
-    /* edge_l */
-    double theta = parts->theta;
-    double wide = triangle_len * tan(theta);
-    int v0x = coords[1].x - coords[0].x;
-    int v0y = coords[1].y - coords[0].y;
-    int v1x = -v0y;
-    int v1y = v0x;
-    double v1len = sqrt(v1x * v1x + v1y * v1y); // == total_len
-    coords[3].x = wide * v1x / v1len + coords[2].x;
-    coords[3].y = wide * v1y / v1len + coords[2].y;
-    
-    /* edge_r */
-    int v2x = v0y;
-    int v2y = -v0x;
-    double v2len = sqrt(v2x * v2x + v2y * v2y); // == total_len
-    coords[4].x = wide * v2x / v1len + coords[2].x;
-    coords[4].y = wide * v2y / v1len + coords[2].y;
     
     cairo_set_line_width(cr, parts->thickness);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-
-    cairo_move_to(cr, coords[0].x, coords[0].y);
-    cairo_line_to(cr, coords[3].x, coords[3].y);
-    cairo_line_to(cr, coords[4].x, coords[4].y);
+    
+    cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
+    cairo_line_to(cr, handles[HANDLE_EDGE_L].cx, handles[HANDLE_EDGE_L].cy);
+    cairo_line_to(cr, handles[HANDLE_EDGE_R].cx, handles[HANDLE_EDGE_R].cy);
     cairo_close_path(cr);
     cairo_stroke(cr);
     
-    cairo_move_to(cr, coords[2].x, coords[2].y);
-    cairo_line_to(cr, coords[1].x, coords[1].y);
+    cairo_move_to(cr, handles[HANDLE_STEP].cx, handles[HANDLE_STEP].cy);
+    cairo_line_to(cr, handles[HANDLE_GRIP].cx, handles[HANDLE_GRIP].cy);
     cairo_stroke(cr);
     
     cairo_set_line_width(cr, 1);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     
-    cairo_move_to(cr, coords[0].x, coords[0].y);
-    cairo_line_to(cr, coords[3].x, coords[3].y);
-    cairo_line_to(cr, coords[4].x, coords[4].y);
+    cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
+    cairo_line_to(cr, handles[HANDLE_EDGE_L].cx, handles[HANDLE_EDGE_L].cy);
+    cairo_line_to(cr, handles[HANDLE_EDGE_R].cx, handles[HANDLE_EDGE_R].cy);
     cairo_close_path(cr);
     cairo_fill(cr);
 }
 
-#if 0
-void rect_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+void arrow_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
 {
     struct handle_geom_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
@@ -159,7 +131,7 @@ void rect_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_restore(cr);
 }
 
-gboolean rect_select(struct parts_t *parts, int x, int y, gboolean selected)
+gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
 {
     struct handle_geom_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
@@ -206,6 +178,8 @@ gboolean rect_select(struct parts_t *parts, int x, int y, gboolean selected)
     
     return x >= x1 && x < x2 && y >= y1 && y < y2;
 }
+
+#if 0
 
 void rect_drag_step(struct parts_t *p, int x, int y)
 {

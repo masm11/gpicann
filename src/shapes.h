@@ -9,6 +9,7 @@ void rect_drag_fini(struct parts_t *parts, int x, int y);
 struct parts_t *rect_create(int x, int y);
 
 void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+void arrow_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
 struct parts_t *arrow_create(int x, int y);
 
 #endif	/* ifndef SHAPES_H__INCLUDED */

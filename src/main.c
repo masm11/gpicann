@@ -95,7 +95,7 @@ struct {
     void (*drag_fini)(struct parts_t *parts, int x, int y);
 } parts_ops[PARTS_NR] = {
     { base_draw, NULL, base_select },
-    { arrow_draw },
+    { arrow_draw, arrow_draw_handle },
     { },
     { rect_draw, rect_draw_handle, rect_select, rect_drag_step, rect_drag_fini },
 };
