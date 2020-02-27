@@ -94,25 +94,17 @@ void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     
-    cairo_set_line_width(cr, parts->thickness);
-    
-    cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
-    cairo_line_to(cr, handles[HANDLE_EDGE_L].cx, handles[HANDLE_EDGE_L].cy);
-    cairo_line_to(cr, handles[HANDLE_EDGE_R].cx, handles[HANDLE_EDGE_R].cy);
-    cairo_close_path(cr);
-    cairo_stroke(cr);
-    
-    cairo_move_to(cr, handles[HANDLE_STEP].cx, handles[HANDLE_STEP].cy);
-    cairo_line_to(cr, handles[HANDLE_GRIP].cx, handles[HANDLE_GRIP].cy);
-    cairo_stroke(cr);
-    
-    cairo_set_line_width(cr, 1);
-    
+    cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
     cairo_line_to(cr, handles[HANDLE_EDGE_L].cx, handles[HANDLE_EDGE_L].cy);
     cairo_line_to(cr, handles[HANDLE_EDGE_R].cx, handles[HANDLE_EDGE_R].cy);
     cairo_close_path(cr);
     cairo_fill(cr);
+    
+    cairo_set_line_width(cr, parts->thickness);
+    cairo_move_to(cr, handles[HANDLE_STEP].cx, handles[HANDLE_STEP].cy);
+    cairo_line_to(cr, handles[HANDLE_GRIP].cx, handles[HANDLE_GRIP].cy);
+    cairo_stroke(cr);
 }
 
 void arrow_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
@@ -260,7 +252,7 @@ struct parts_t *arrow_create(int x, int y)
     p->y = y;
     p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
     p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
-    p->triangle_len = 20;
+    p->triangle_len = 50;
     p->theta = M_PI / 8;
     p->thickness = 10;
     
