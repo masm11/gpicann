@@ -28,18 +28,6 @@ struct parts_t *parts_alloc(void)
     return p;
 }
 
-void parts_free(struct parts_t *parts)
-{
-    if (parts == NULL)
-	return;
-    if (parts->text != NULL) {
-	g_free(parts->text);
-	parts->text = NULL;
-    }
-    parts->next = parts->back = NULL;
-    g_free(parts);
-}
-
 struct parts_t *parts_dup(struct parts_t *orig)
 {
     struct parts_t *p = g_new0(struct parts_t, 1);
