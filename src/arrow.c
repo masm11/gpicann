@@ -26,6 +26,8 @@ enum {
 
 static int beg_x = 0, beg_y = 0;
 static int orig_x = 0, orig_y = 0, orig_w = 0, orig_h = 0;
+static int orig_edge_l_x = 0, orig_edge_l_y = 0, orig_edge_r_x = 0, orig_edge_r_y = 0;
+static int orig_step_x = 0, orig_step_y = 0;
 static int dragging_handle = -1;
 
 struct handle_geom_t {
@@ -72,8 +74,8 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
     int v2x = v0y;
     int v2y = -v0x;
     double v2len = sqrt(v2x * v2x + v2y * v2y); // == total_len
-    bp->cx = wide * v2x / v1len + bufp[HANDLE_STEP].cx;
-    bp->cy = wide * v2y / v1len + bufp[HANDLE_STEP].cy;
+    bp->cx = wide * v2x / v2len + bufp[HANDLE_STEP].cx;
+    bp->cy = wide * v2y / v2len + bufp[HANDLE_STEP].cy;
     bp++;
     
     for (int i = 0; i < HANDLE_NR; i++) {
@@ -93,8 +95,6 @@ void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     
     cairo_set_line_width(cr, parts->thickness);
-    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     
     cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
     cairo_line_to(cr, handles[HANDLE_EDGE_L].cx, handles[HANDLE_EDGE_L].cy);
@@ -107,8 +107,6 @@ void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_stroke(cr);
     
     cairo_set_line_width(cr, 1);
-    cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     
     cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
     cairo_line_to(cr, handles[HANDLE_EDGE_L].cx, handles[HANDLE_EDGE_L].cy);
@@ -146,29 +144,32 @@ gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
 		orig_y = parts->y;
 		orig_w = parts->width;
 		orig_h = parts->height;
+		orig_edge_l_x = handles[HANDLE_EDGE_L].x;
+		orig_edge_l_y = handles[HANDLE_EDGE_L].y;
+		orig_edge_r_x = handles[HANDLE_EDGE_R].x;
+		orig_edge_r_y = handles[HANDLE_EDGE_R].y;
+		orig_step_x = handles[HANDLE_STEP].x;
+		orig_step_y = handles[HANDLE_STEP].y;
 		dragging_handle = i;
 		return TRUE;
 	    }
 	}
     }
     
-    int x1, x2, y1, y2, t;
+    double ax = x - handles[HANDLE_GRIP].cx;
+    double ay = y - handles[HANDLE_GRIP].cy;
+    double bx = x - handles[HANDLE_POINT].cx;
+    double by = y - handles[HANDLE_POINT].cy;
+    double cx = handles[HANDLE_POINT].cx - handles[HANDLE_GRIP].cx;
+    double cy = handles[HANDLE_POINT].cy - handles[HANDLE_GRIP].cy;
     
-    x1 = parts->x;
-    x2 = x1 + parts->width;
-    y1 = parts->y;
-    y2 = y1 + parts->height;
+    double a2 = ax * ax + ay * ay;
+    double b2 = bx * bx + by * by;
+    double c2 = cx * cx + cy * cy;
+    double distance = sqrt(((c2 - a2 - b2) * (c2 - a2 - b2) - 4 * a2 * b2) / (-4 * c2));
     
-    if (x2 < x1) {
-	t = x1;
-	x1 = x2;
-	x2 = t;
-    }
-    if (y2 < y1) {
-	t = y1;
-	y1 = y2;
-	y2 = t;
-    }
+    double inner_prod_ac = ax * cx + ay * cy;
+    double inner_prod_bc = bx * -cx + by * -cy;
     
     beg_x = x;
     beg_y = y;
@@ -176,56 +177,79 @@ gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
     orig_y = parts->y;
     dragging_handle = -1;
     
-    return x >= x1 && x < x2 && y >= y1 && y < y2;
+    return distance <= parts->thickness && inner_prod_ac >= 0 && inner_prod_bc >= 0;
 }
 
-#if 0
-
-void rect_drag_step(struct parts_t *p, int x, int y)
+void arrow_drag_step(struct parts_t *p, int x, int y)
 {
+    struct handle_geom_t handles[HANDLE_NR];
+    make_handle_geoms(p, handles);
+    
     int dx = x - beg_x;
     int dy = y - beg_y;
     
+    double new_x, new_y;
     switch (dragging_handle) {
-    case HANDLE_TOP_LEFT:
-    case HANDLE_LEFT:
-    case HANDLE_BOTTOM_LEFT:
+    case -1:
 	p->x = orig_x + dx;
+	p->y = orig_y + dy;
+	break;
+	
+    case HANDLE_GRIP:
+	p->x = orig_x + dx;
+	p->y = orig_y + dy;
 	p->width = orig_w - dx;
-    }
-    
-    switch (dragging_handle) {
-    case HANDLE_TOP_RIGHT:
-    case HANDLE_RIGHT:
-    case HANDLE_BOTTOM_RIGHT:
-	p->width = orig_w + dx;
-    }
-    
-    switch (dragging_handle) {
-    case HANDLE_TOP_LEFT:
-    case HANDLE_TOP:
-    case HANDLE_TOP_RIGHT:
-	p->y = orig_y + dy;
 	p->height = orig_h - dy;
-    }
-    
-    switch (dragging_handle) {
-    case HANDLE_BOTTOM_LEFT:
-    case HANDLE_BOTTOM:
-    case HANDLE_BOTTOM_RIGHT:
+	break;
+	
+    case HANDLE_POINT:
+	p->width = orig_w + dx;
 	p->height = orig_h + dy;
-    }
-    
-    if (dragging_handle == -1) {
-	p->x = orig_x + dx;
-	p->y = orig_y + dy;
+	break;
+
+    case HANDLE_STEP:
+    case HANDLE_EDGE_L:
+    case HANDLE_EDGE_R:
+	if (TRUE) {
+	    switch (dragging_handle) {
+	    case HANDLE_EDGE_L:
+		new_x = orig_edge_l_x + dx;
+		new_y = orig_edge_l_y + dy;
+		break;
+	    case HANDLE_EDGE_R:
+		new_x = orig_edge_r_x + dx;
+		new_y = orig_edge_r_y + dy;
+		break;
+	    case HANDLE_STEP:
+		new_x = orig_step_x + dx;
+		new_y = orig_step_y + dy;
+		break;
+	    }
+	    double cx = handles[HANDLE_GRIP].x - handles[HANDLE_POINT].x;
+	    double cy = handles[HANDLE_GRIP].y - handles[HANDLE_POINT].y;
+	    double ax = new_x - handles[HANDLE_POINT].x;
+	    double ay = new_y - handles[HANDLE_POINT].y;
+	    double clen = sqrt(cx * cx + cy * cy);
+	    double alen = sqrt(ax * ax + ay * ay);
+	    double theta = acos((ax * cx + ay * cy) / clen / alen);
+	    switch (dragging_handle) {
+	    case HANDLE_EDGE_L:
+	    case HANDLE_EDGE_R:
+		p->theta = theta;
+		p->triangle_len = alen * cos(theta);
+		break;
+	    case HANDLE_STEP:
+		p->triangle_len = alen * cos(theta);
+		break;
+	    }
+	}
+	break;
     }
 }
 
-void rect_drag_fini(struct parts_t *parts, int x, int y)
+void arrow_drag_fini(struct parts_t *parts, int x, int y)
 {
 }
-#endif
 
 struct parts_t *arrow_create(int x, int y)
 {
