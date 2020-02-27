@@ -92,6 +92,35 @@ void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     struct handle_geom_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
     
+#define DIFF 4.0
+#define NR 16
+
+    for (int i = 0; i < NR; i++) {
+	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
+	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
+	cairo_save(cr);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05);
+
+	cairo_set_line_width(cr, 1.0);
+	cairo_move_to(cr, handles[HANDLE_POINT].cx + dx, handles[HANDLE_POINT].cy + dy);
+	cairo_line_to(cr, handles[HANDLE_EDGE_L].cx + dx, handles[HANDLE_EDGE_L].cy + dy);
+	cairo_line_to(cr, handles[HANDLE_EDGE_R].cx + dx, handles[HANDLE_EDGE_R].cy + dy);
+	cairo_close_path(cr);
+	cairo_fill(cr);
+    
+	cairo_set_line_width(cr, parts->thickness);
+	cairo_move_to(cr, handles[HANDLE_STEP].cx + dx, handles[HANDLE_STEP].cy + dy);
+	cairo_line_to(cr, handles[HANDLE_GRIP].cx + dx, handles[HANDLE_GRIP].cy + dy);
+	cairo_stroke(cr);
+
+	cairo_restore(cr);
+    }
+
+#undef NR
+#undef DIFF
+
+
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
     
     cairo_set_line_width(cr, 1.0);
