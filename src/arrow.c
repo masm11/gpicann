@@ -150,33 +150,20 @@ void arrow_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     cairo_restore(cr);
 }
 
-gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
+static int on_handle(struct handle_geom_t *handles, int x, int y)
 {
-    struct handle_geom_t handles[HANDLE_NR];
-    make_handle_geoms(parts, handles);
-    
-    if (selected) {
-	for (int i = 0; i < HANDLE_NR; i++) {
-	    if (x >= handles[i].x && x < handles[i].x + handles[i].width
-		    && y >= handles[i].y && y < handles[i].y + handles[i].height) {
-		beg_x = x;
-		beg_y = y;
-		orig_x = parts->x;
-		orig_y = parts->y;
-		orig_w = parts->width;
-		orig_h = parts->height;
-		orig_edge_l_x = handles[HANDLE_EDGE_L].x;
-		orig_edge_l_y = handles[HANDLE_EDGE_L].y;
-		orig_edge_r_x = handles[HANDLE_EDGE_R].x;
-		orig_edge_r_y = handles[HANDLE_EDGE_R].y;
-		orig_step_x = handles[HANDLE_STEP].x;
-		orig_step_y = handles[HANDLE_STEP].y;
-		dragging_handle = i;
-		return TRUE;
-	    }
+    for (int i = 0; i < HANDLE_NR; i++) {
+	if (x >= handles[i].x && x < handles[i].x + handles[i].width
+		&& y >= handles[i].y && y < handles[i].y + handles[i].height) {
+	    return i;
 	}
     }
     
+    return -1;
+}
+
+static gboolean on_line(struct parts_t *parts, struct handle_geom_t *handles, int x, int y)
+{
     double ax = x - handles[HANDLE_GRIP].cx;
     double ay = y - handles[HANDLE_GRIP].cy;
     double bx = x - handles[HANDLE_POINT].cx;
@@ -192,13 +179,62 @@ gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
     double inner_prod_ac = ax * cx + ay * cy;
     double inner_prod_bc = bx * -cx + by * -cy;
     
+    return distance <= parts->thickness && inner_prod_ac >= 0 && inner_prod_bc >= 0;
+}
+
+static gboolean on_triangle(struct handle_geom_t *handles, int x, int y)
+{
+    double a0x = handles[HANDLE_EDGE_R].x - handles[HANDLE_EDGE_L].x;
+    double a0y = handles[HANDLE_EDGE_R].y - handles[HANDLE_EDGE_L].y;
+    double b0x = handles[HANDLE_POINT].x - handles[HANDLE_EDGE_R].x;
+    double b0y = handles[HANDLE_POINT].y - handles[HANDLE_EDGE_R].y;
+    double c0x = handles[HANDLE_EDGE_L].x - handles[HANDLE_POINT].x;
+    double c0y = handles[HANDLE_EDGE_L].y - handles[HANDLE_POINT].y;
+    
+    double a1x = x - handles[HANDLE_EDGE_L].x;
+    double a1y = y - handles[HANDLE_EDGE_L].y;
+    double b1x = x - handles[HANDLE_EDGE_R].x;
+    double b1y = y - handles[HANDLE_EDGE_R].y;
+    double c1x = x - handles[HANDLE_POINT].x;
+    double c1y = y - handles[HANDLE_POINT].y;
+    
+    double outer_prod_a = a0x * a1y - a0y * a1x;
+    double outer_prod_b = b0x * b1y - b0y * b1x;
+    double outer_prod_c = c0x * c1y - c0y * c1x;
+
+    if (outer_prod_a > 0 && outer_prod_b > 0 && outer_prod_c > 0)
+	return TRUE;
+    if (outer_prod_a < 0 && outer_prod_b < 0 && outer_prod_c < 0)
+	return TRUE;
+    return FALSE;
+}
+
+gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
+{
+    struct handle_geom_t handles[HANDLE_NR];
+    make_handle_geoms(parts, handles);
+    
     beg_x = x;
     beg_y = y;
     orig_x = parts->x;
     orig_y = parts->y;
-    dragging_handle = -1;
+    orig_w = parts->width;
+    orig_h = parts->height;
+    orig_edge_l_x = handles[HANDLE_EDGE_L].x;
+    orig_edge_l_y = handles[HANDLE_EDGE_L].y;
+    orig_edge_r_x = handles[HANDLE_EDGE_R].x;
+    orig_edge_r_y = handles[HANDLE_EDGE_R].y;
+    orig_step_x = handles[HANDLE_STEP].x;
+    orig_step_y = handles[HANDLE_STEP].y;
     
-    return distance <= parts->thickness && inner_prod_ac >= 0 && inner_prod_bc >= 0;
+    if (selected) {
+	dragging_handle = on_handle(handles, x, y);
+	if (dragging_handle >= 0)
+	    return TRUE;
+    }
+    
+    dragging_handle = -1;
+    return on_line(parts, handles, x, y) || on_triangle(handles, x, y);
 }
 
 void arrow_drag_step(struct parts_t *p, int x, int y)
