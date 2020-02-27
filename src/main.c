@@ -24,14 +24,25 @@ static GtkWidget *drawable;
 
 struct parts_t *parts_alloc(void)
 {
-    struct parts_t *p = malloc(sizeof *p);
-    memset(p, 0, sizeof *p);
+    struct parts_t *p = g_new0(struct parts_t, 1);
     return p;
+}
+
+void parts_free(struct parts_t *parts)
+{
+    if (parts == NULL)
+	return;
+    if (parts->text != NULL) {
+	g_free(parts->text);
+	parts->text = NULL;
+    }
+    parts->next = parts->back = NULL;
+    g_free(parts);
 }
 
 struct parts_t *parts_dup(struct parts_t *orig)
 {
-    struct parts_t *p = malloc(sizeof *p);
+    struct parts_t *p = g_new0(struct parts_t, 1);
     *p = *orig;
     p->next = p->back = NULL;
     if (p->text != NULL)
@@ -54,12 +65,13 @@ static void history_append_parts(struct history_t *hp, struct parts_t *pp)
 
 static struct history_t *history_dup(struct history_t *orig)
 {
-    struct history_t *hp = malloc(sizeof *hp);
-    memset(hp, 0, sizeof *hp);
+    struct history_t *hp = g_new0(struct history_t, 1);
     
     for (struct parts_t *op = orig->parts_list; op != NULL; op = op->next) {
 	struct parts_t *pp = parts_dup(op);
 	history_append_parts(hp, pp);
+	if (orig->selp == op)
+	    hp->selp = pp;
     }
     
     return hp;
@@ -68,6 +80,34 @@ static struct history_t *history_dup(struct history_t *orig)
 static void history_copy_top_of_undoable(void)
 {
     struct history_t *hp = history_dup(undoable);
+    hp->next = undoable;
+    undoable = hp;
+    
+    redoable = NULL;	/* leaks a little */
+}
+
+static void history_undo(void)
+{
+    struct history_t *hp = undoable;
+    if (hp->next == NULL) {
+	/* can't undo */
+	return;
+    }
+    undoable = hp->next;
+    
+    hp->next = redoable;
+    redoable = hp;
+}
+
+static void history_redo(void)
+{
+    struct history_t *hp = redoable;
+    if (hp == NULL) {
+	/* can't redo */
+	return;
+    }
+    redoable = hp->next;
+
     hp->next = undoable;
     undoable = hp;
 }
@@ -191,9 +231,12 @@ static void button_event_edit(GdkEvent *ev)
 	    GdkEventButton *ep = &ev->button;
 	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
 		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
-		    undoable->selp = p;
-		    step++;
-		    break;
+		    if (p->type != PARTS_BASE) {
+			undoable->selp = p;
+			step++;
+			break;
+		    } else
+			undoable->selp = NULL;
 		}
 	    }
 	}
@@ -214,6 +257,7 @@ static void button_event_edit(GdkEvent *ev)
 		dy = -dy;
 #define EPSILON 3
 	    if (dx >= EPSILON || dy >= EPSILON) {
+		history_copy_top_of_undoable();
 		struct parts_t *p = undoable->selp;
 		call_drag_step(p, ep->x, ep->y);
 		step++;
@@ -329,6 +373,24 @@ static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
     }
 }
 
+static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data)
+{
+    if (ev->type == GDK_KEY_PRESS) {
+	if (ev->keyval == GDK_KEY_z && ev->state == GDK_CONTROL_MASK) {
+	    history_undo();
+	    gtk_widget_queue_draw(drawable);
+	    return TRUE;
+	}
+	if (ev->keyval == GDK_KEY_Z && ev->state == (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) {
+	    history_redo();
+	    gtk_widget_queue_draw(drawable);
+	    return TRUE;
+	}
+    }
+    
+    return FALSE;
+}
+
 static void mode_cb(GtkToolButton *item, gpointer user_data)
 {
     mode = GPOINTER_TO_INT(user_data);
@@ -358,8 +420,7 @@ int main(int argc, char **argv)
     initial->height = gdk_pixbuf_get_height(pixbuf);
     initial->pixbuf = pixbuf;
     
-    struct history_t *hist = malloc(sizeof *hist);
-    memset(hist, 0, sizeof *hist);
+    struct history_t *hist = g_new0(struct history_t, 1);
     hist->parts_list = initial;
     
     undoable = hist;
@@ -367,6 +428,8 @@ int main(int argc, char **argv)
     
     toplevel = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     g_signal_connect(G_OBJECT(toplevel), "delete-event", G_CALLBACK(exit), 0);
+    gtk_widget_add_events(toplevel, GDK_KEY_PRESS_MASK);
+    g_signal_connect(G_OBJECT(toplevel), "key-press-event", G_CALLBACK(key_event), NULL);
     gtk_widget_show(toplevel);
     
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -399,6 +462,7 @@ int main(int argc, char **argv)
     }
     
     GtkWidget *evbox = gtk_event_box_new();
+    gtk_widget_add_events(evbox, GDK_KEY_PRESS_MASK);
     g_signal_connect(G_OBJECT(evbox), "button-press-event", G_CALLBACK(button_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "button-release-event", G_CALLBACK(button_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "motion-notify-event", G_CALLBACK(button_event), NULL);
