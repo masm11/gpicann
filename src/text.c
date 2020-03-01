@@ -381,6 +381,19 @@ gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
 		gtk_widget_queue_draw(drawable);
 		return TRUE;
 	    }
+	    if (ev->keyval == GDK_KEY_BackSpace) {
+		int new_pos = cursor_prev_pos_in_bytes(focused_parts, cursor_pos);
+		if (new_pos < cursor_pos) {
+		    gchar *new_str = g_strdup_printf("%.*s%s",
+			    new_pos, focused_parts->text,
+			    focused_parts->text + cursor_pos);
+		    g_free(focused_parts->text);
+		    focused_parts->text = new_str;
+		    cursor_pos = new_pos;
+		    gtk_widget_queue_draw(drawable);
+		    return TRUE;
+		}
+	    }
 	    if (ev->keyval == GDK_KEY_Return) {
 		insert_string_at_cursor(parts, "\n");
 		gtk_widget_queue_draw(drawable);
