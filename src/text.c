@@ -125,26 +125,29 @@ static int cursor_prev_pos_in_bytes(struct parts_t *parts, int pos)
     return new_pos;
 }
 
+static PangoLayout *make_shadow(PangoLayout *layout)
+{
+    layout = pango_layout_copy(layout);
+    
+    PangoAttrList *attr_list = pango_layout_get_attributes(layout);
+    
+    const char *str = pango_layout_get_text(layout);
+    
+    PangoAttribute *attr;
+    attr = pango_attr_foreground_new(0, 0, 0);
+    attr->start_index = 0;
+    attr->end_index = strlen(str);
+    pango_attr_list_change(attr_list, attr);
+    attr = pango_attr_foreground_alpha_new(65535 * 0.05);
+    attr->start_index = 0;
+    attr->end_index = strlen(str);
+    pango_attr_list_change(attr_list, attr);
+    
+    return layout;
+}
+
 void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
 {
-#if 0
-#define DIFF 4.0
-#define NR 16
-
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
-	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
-	cairo_save(cr);
-	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05);
-	cairo_rectangle(cr, parts->x + dx, parts->y + dy, parts->width, parts->height);
-	cairo_fill(cr);
-	cairo_restore(cr);
-    }
-
-#undef NR
-#undef DIFF
-#endif
-    
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
@@ -187,6 +190,24 @@ void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
     }
     
     pango_layout_set_attributes(layout, attr_list);
+    
+    PangoLayout *layout_shadow = make_shadow(layout);
+    
+#define DIFF 4.0
+#define NR 16
+    
+    for (int i = 0; i < NR; i++) {
+	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
+	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
+	cairo_save(cr);
+	cairo_move_to(cr, parts->x + dx, parts->y + dy);
+	cairo_set_source_rgba(cr, 0, 0, 0, 0.05);
+	pango_cairo_show_layout(cr, layout_shadow);
+	cairo_restore(cr);
+    }
+    
+#undef NR
+#undef DIFF
     
     cairo_move_to(cr, parts->x, parts->y);
     cairo_set_source_rgba(cr, 1, 1, 1, 1);
@@ -316,7 +337,10 @@ struct parts_t *text_create(int x, int y)
     p->y = y;
     p->width = 100;
     p->height = 50;
-    p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
+    p->fg.r = 1.0;
+    p->fg.g = 0.0;
+    p->fg.b = 0.0;
+    p->fg.a = 1.0;
     p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
     p->text = g_strdup("");
     
