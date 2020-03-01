@@ -124,7 +124,7 @@ struct {
 } parts_ops[PARTS_NR] = {
     { base_draw, NULL, base_select },
     { arrow_draw, arrow_draw_handle, arrow_select, arrow_drag_step, arrow_drag_fini },
-    { },
+    { text_draw, text_draw_handle, text_select, text_drag_step, text_drag_fini },
     { rect_draw, rect_draw_handle, rect_select, rect_drag_step, rect_drag_fini },
 };
 
@@ -204,6 +204,7 @@ enum {
     MODE_EDIT,
     MODE_RECT,
     MODE_ARROW,
+    MODE_TEXT,
 };
 
 static int mode = MODE_EDIT;
@@ -346,6 +347,34 @@ static void button_event_arrow(GdkEvent *ev)
     }
 }
 
+static void button_event_text(GdkEvent *ev)
+{
+    static int step = 0;
+    
+    switch (step) {
+    case 0:
+	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	    history_copy_top_of_undoable();
+	    struct history_t *hp = undoable;
+	    
+	    struct parts_t *p = text_create(ev->button.x, ev->button.y);
+	    history_append_parts(hp, p);
+	    hp->selp = p;
+	    
+	    step++;
+	}
+	break;
+	
+    case 1:
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    gtk_widget_queue_draw(drawable);
+	    step = 0;
+	    break;
+	}
+	break;
+    }
+}
+
 static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 {
     switch (mode) {
@@ -357,6 +386,9 @@ static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 	break;
     case MODE_ARROW:
 	button_event_arrow(ev);
+	break;
+    case MODE_TEXT:
+	button_event_text(ev);
 	break;
     }
 }
@@ -373,6 +405,10 @@ static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data
 	    history_redo();
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
+	}
+	if (undoable->selp != NULL && undoable->selp->type == PARTS_TEXT) {
+	    if (text_filter_keypress(undoable->selp, ev))
+		return TRUE;
 	}
     }
     
@@ -448,6 +484,13 @@ int main(int argc, char **argv)
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
+    {
+	GtkToolItem *item = gtk_tool_button_new(NULL, "text");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "insert-text");
+	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_TEXT));
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
     
     GtkWidget *evbox = gtk_event_box_new();
     gtk_widget_add_events(evbox, GDK_KEY_PRESS_MASK);
@@ -462,6 +505,7 @@ int main(int argc, char **argv)
     gtk_widget_show(drawable);
     gtk_container_add(GTK_CONTAINER(evbox), drawable);
     
+    text_init(toplevel, drawable);
     
     gtk_main();
     return 0;

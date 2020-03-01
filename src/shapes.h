@@ -15,4 +15,15 @@ void arrow_drag_step(struct parts_t *p, int x, int y);
 void arrow_drag_fini(struct parts_t *parts, int x, int y);
 struct parts_t *arrow_create(int x, int y);
 
+void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+void text_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+gboolean text_select(struct parts_t *parts, int x, int y, gboolean selected);
+void text_drag_step(struct parts_t *p, int x, int y);
+void text_drag_fini(struct parts_t *parts, int x, int y);
+struct parts_t *text_create(int x, int y);
+gboolean text_filter_keypress(struct parts_t *part, GdkEventKey *ev);
+void text_focus_in(void);
+void text_focus_out(void);
+void text_init(GtkWidget *top, GtkWidget *w);
+
 #endif	/* ifndef SHAPES_H__INCLUDED */
