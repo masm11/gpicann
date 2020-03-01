@@ -71,7 +71,7 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
     }
 }
 
-void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
 {
 #define DIFF 4.0
 #define NR 16

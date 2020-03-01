@@ -87,7 +87,7 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
     }
 }
 
-void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
 {
     struct handle_geom_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);

@@ -125,7 +125,7 @@ static int cursor_prev_pos_in_bytes(struct parts_t *parts, int pos)
     return new_pos;
 }
 
-void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
 {
 #if 0
 #define DIFF 4.0
@@ -162,21 +162,23 @@ void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     
     pango_layout_set_attributes(layout, attr_list);
     
-    PangoAttribute *curs_bg_pre = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
-    PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
-    PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
-    int cursor_next = cursor_next_pos_in_bytes(parts, cursor_pos);
-    curs_bg_pre->start_index = cursor_pos;
-    curs_bg_pre->end_index = cursor_pos;
-    curs_bg->start_index = cursor_pos;
-    curs_bg->end_index = cursor_next;
-    curs_fg->start_index = cursor_pos;
-    curs_fg->end_index = cursor_next;
-    pango_attr_list_change(attr_list, curs_bg);
-    pango_attr_list_change(attr_list, curs_bg_pre);
-    pango_attr_list_change(attr_list, curs_fg);
+    if (selected) {
+	PangoAttribute *curs_bg_pre = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
+	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
+	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
+	int cursor_next = cursor_next_pos_in_bytes(parts, cursor_pos);
+	curs_bg_pre->start_index = cursor_pos;
+	curs_bg_pre->end_index = cursor_pos;
+	curs_bg->start_index = cursor_pos;
+	curs_bg->end_index = cursor_next;
+	curs_fg->start_index = cursor_pos;
+	curs_fg->end_index = cursor_next;
+	pango_attr_list_change(attr_list, curs_bg);
+	pango_attr_list_change(attr_list, curs_bg_pre);
+	pango_attr_list_change(attr_list, curs_fg);
+    }
     
-    if (parts == focused_parts && preedit.attrs != NULL) {
+    if (selected && preedit.attrs != NULL) {
 	if (strlen(preedit.str) != 0) {
 	    pango_attr_list_splice(attr_list, preedit.attrs, cursor_pos, strlen(preedit.str));
 	    gchar *str = insert_string(parts->text, cursor_pos, preedit.str);

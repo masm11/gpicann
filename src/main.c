@@ -102,7 +102,7 @@ static void history_redo(void)
 
 /****/
 
-static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
 {
     gdk_cairo_set_source_pixbuf(cr, parts->pixbuf, 0, 0);
     cairo_paint(cr);
@@ -116,7 +116,7 @@ static gboolean base_select(struct parts_t *parts, int x, int y, gboolean select
 /****/
 
 struct {
-    void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+    void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected);
     void (*draw_handle)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
     gboolean (*select)(struct parts_t *parts, int x, int y, gboolean selected);
     void (*drag_step)(struct parts_t *parts, int x, int y);
@@ -128,14 +128,14 @@ struct {
     { rect_draw, rect_draw_handle, rect_select, rect_drag_step, rect_drag_fini },
 };
 
-static inline void call_draw(struct parts_t *p, GtkWidget *drawable, cairo_t *cr)
+static inline void call_draw(struct parts_t *p, GtkWidget *drawable, cairo_t *cr, gboolean selected)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
 	exit(1);
     }
     if (parts_ops[p->type].draw != NULL)
-	(parts_ops[p->type].draw)(p, drawable, cr);
+	(parts_ops[p->type].draw)(p, drawable, cr, selected);
 }
 
 static inline void call_draw_handle(struct parts_t *p, GtkWidget *drawable, cairo_t *cr)
@@ -187,7 +187,7 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
     
     for (lp = undoable->parts_list; lp != NULL; lp = lp->next) {
 	cairo_save(cr);
-	call_draw(lp, drawable, cr);
+	call_draw(lp, drawable, cr, lp == undoable->selp);
 	cairo_restore(cr);
     }
     
@@ -359,6 +359,7 @@ static void button_event_text(GdkEvent *ev)
 	    
 	    struct parts_t *p = text_create(ev->button.x, ev->button.y);
 	    history_append_parts(hp, p);
+	    text_select(p, ev->button.x, ev->button.y, FALSE);
 	    hp->selp = p;
 	    
 	    step++;
