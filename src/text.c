@@ -365,6 +365,27 @@ static void insert_string_at_cursor(struct parts_t *parts, const char *str)
     cursor_pos += strlen(str);
 }
 
+void focus_on_click(struct parts_t *parts, int x, int y)
+{
+    PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
+    pango_layout_set_width(layout, parts->width * PANGO_SCALE);
+    
+    PangoFontDescription *font_desc = pango_font_description_new();
+    pango_font_description_set_family(font_desc, "Noto Sans Mono CJK JP");
+    pango_font_description_set_size(font_desc, 32768);
+    pango_layout_set_font_description(layout, font_desc);
+    
+    int new_cursor_pos, trail;
+    if (pango_layout_xy_to_index(layout, (x - parts->x) * PANGO_SCALE, (y - parts->y) * PANGO_SCALE, &new_cursor_pos, &trail)) {
+	cursor_pos = new_cursor_pos;
+	focused_parts = parts;
+	gtk_widget_queue_draw(drawable);
+    }
+    
+    g_object_unref(layout);
+    pango_font_description_free(font_desc);
+}
+
 gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
 {
     if (im_context != NULL) {

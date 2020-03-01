@@ -211,29 +211,49 @@ static int mode = MODE_EDIT;
 
 static void button_event_edit(GdkEvent *ev)
 {
+    static struct parts_t *previously_selected_parts = NULL;
     static int step = 0;
     static int beg_x = 0, beg_y = 0;
     
+    enum {
+	STEP_IDLE,
+	STEP_AFTER_PRESS,
+	STEP_MOTION,
+	STEP_IDLE_TEXT,
+	STEP_AFTER_PRESS_TEXT,
+	STEP_MOTION_TEXT,
+	STEP_EDIT_TEXT,
+    };
+
     switch (step) {
-    case 0:
+    case STEP_IDLE:
 	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
 	    GdkEventButton *ep = &ev->button;
 	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
 		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
-		    if (p->type != PARTS_BASE) {
-			undoable->selp = p;
-			step++;
-			break;
-		    } else
+		    switch (p->type) {
+		    case PARTS_BASE:
 			undoable->selp = NULL;
+			break;
+		    case PARTS_TEXT:
+			undoable->selp = p;
+			previously_selected_parts = NULL;
+			step = STEP_AFTER_PRESS_TEXT;
+			break;
+		    default:
+			undoable->selp = p;
+			step = STEP_AFTER_PRESS;
+			break;
+		    }
+		    break;
 		}
 	    }
 	}
 	break;
 	
-    case 1:
+    case STEP_AFTER_PRESS:
 	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    step = 0;
+	    step = STEP_IDLE;
 	    break;
 	}
 	if (ev->type == GDK_MOTION_NOTIFY) {
@@ -249,20 +269,20 @@ static void button_event_edit(GdkEvent *ev)
 		history_copy_top_of_undoable();
 		struct parts_t *p = undoable->selp;
 		call_drag_step(p, ep->x, ep->y);
-		step++;
+		step = STEP_MOTION;
 		break;
 	    }
 #undef EPSILON
 	}
 	break;
 	
-    case 2:
+    case STEP_MOTION:
 	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
 	    GdkEventButton *ep = &ev->button;
 	    struct parts_t *p = undoable->selp;
 	    call_drag_step(p, ep->x, ep->y);
 	    call_drag_fini(p, ep->x, ep->y);
-	    step = 0;
+	    step = STEP_IDLE;
 	    break;
 	}
 	if (ev->type == GDK_MOTION_NOTIFY) {
@@ -270,6 +290,93 @@ static void button_event_edit(GdkEvent *ev)
 	    struct parts_t *p = undoable->selp;
 	    call_drag_step(p, ep->x, ep->y);
 	    break;
+	}
+	break;
+	
+    case STEP_IDLE_TEXT:
+	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	    GdkEventButton *ep = &ev->button;
+	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
+		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
+		    if (p->type != PARTS_BASE) {
+			undoable->selp = p;
+			if (p->type == PARTS_TEXT)
+			    step = STEP_AFTER_PRESS_TEXT;
+			else
+			    step = STEP_AFTER_PRESS;
+			break;
+		    } else
+			undoable->selp = NULL;
+		}
+	    }
+	}
+	break;
+	
+    case STEP_AFTER_PRESS_TEXT:
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    if (previously_selected_parts == undoable->selp) {
+		focus_on_click(undoable->selp, ev->button.x, ev->button.y);
+		step = STEP_EDIT_TEXT;
+	    } else {
+		previously_selected_parts = undoable->selp;
+		step = STEP_IDLE_TEXT;
+	    }
+	    break;
+	}
+	if (ev->type == GDK_MOTION_NOTIFY) {
+	    GdkEventMotion *ep = &ev->motion;
+	    int dx = ep->x - beg_x;
+	    int dy = ep->y - beg_y;
+	    if (dx < 0)
+		dx = -dx;
+	    if (dy < 0)
+		dy = -dy;
+#define EPSILON 3
+	    if (dx >= EPSILON || dy >= EPSILON) {
+		history_copy_top_of_undoable();
+		struct parts_t *p = undoable->selp;
+		call_drag_step(p, ep->x, ep->y);
+		step = STEP_MOTION_TEXT;
+		break;
+	    }
+#undef EPSILON
+	}
+	break;
+	
+    case STEP_MOTION_TEXT:
+	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
+	    GdkEventButton *ep = &ev->button;
+	    struct parts_t *p = undoable->selp;
+	    call_drag_step(p, ep->x, ep->y);
+	    call_drag_fini(p, ep->x, ep->y);
+	    previously_selected_parts = undoable->selp;
+	    step = STEP_IDLE_TEXT;
+	    break;
+	}
+	if (ev->type == GDK_MOTION_NOTIFY) {
+	    GdkEventMotion *ep = &ev->motion;
+	    struct parts_t *p = undoable->selp;
+	    call_drag_step(p, ep->x, ep->y);
+	    break;
+	}
+	break;
+	
+    case STEP_EDIT_TEXT:
+	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
+	    GdkEventButton *ep = &ev->button;
+	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
+		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
+		    if (p->type != PARTS_BASE) {
+			undoable->selp = p;
+			if (p->type == PARTS_TEXT)
+			    step = STEP_AFTER_PRESS_TEXT;
+			else
+			    step = STEP_AFTER_PRESS;
+			break;
+		    } else
+			undoable->selp = NULL;
+		}
+	    }
 	}
 	break;
     }
