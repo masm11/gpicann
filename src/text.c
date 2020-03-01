@@ -151,7 +151,6 @@ void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
-    
     PangoFontDescription *font_desc = pango_font_description_new();
     pango_font_description_set_family(font_desc, "Noto Sans Mono CJK JP");
     pango_font_description_set_size(font_desc, 32768);
@@ -212,6 +211,11 @@ void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
     cairo_move_to(cr, parts->x, parts->y);
     cairo_set_source_rgba(cr, 1, 1, 1, 1);
     pango_cairo_show_layout(cr, layout);
+    
+    g_object_unref(layout);
+    pango_font_description_free(font_desc);
+    pango_attr_list_unref(attr_list);
+    g_object_unref(layout_shadow);
 }
 
 void text_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
