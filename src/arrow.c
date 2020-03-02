@@ -121,7 +121,7 @@ void arrow_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolea
 
 
 
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+    cairo_set_source_rgba(cr, parts->fg.r, parts->fg.g, parts->fg.b, 1.0);
     
     cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, handles[HANDLE_POINT].cx, handles[HANDLE_POINT].cy);
@@ -315,7 +315,10 @@ struct parts_t *arrow_create(int x, int y)
     p->type = PARTS_ARROW;
     p->x = x;
     p->y = y;
-    p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
+    p->fg.r = 1;
+    p->fg.g = 0;
+    p->fg.b = 0;
+    p->fg.a = 1;
     p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
     p->triangle_len = 50;
     p->theta = M_PI / 8;
