@@ -544,12 +544,12 @@ static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data)
 {
     if (ev->type == GDK_KEY_PRESS) {
-	if (ev->keyval == GDK_KEY_z && ev->state == GDK_CONTROL_MASK) {
+	if (ev->keyval == GDK_KEY_z && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK) {
 	    history_undo();
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
 	}
-	if (ev->keyval == GDK_KEY_Z && ev->state == (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) {
+	if (ev->keyval == GDK_KEY_Z && (ev->state & GDK_MODIFIER_MASK) == (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) {
 	    history_redo();
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
