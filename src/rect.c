@@ -80,18 +80,20 @@ void rect_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
 	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
 	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
 	cairo_save(cr);
+	cairo_set_line_width(cr, parts->thickness);
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05);
 	cairo_rectangle(cr, parts->x + dx, parts->y + dy, parts->width, parts->height);
-	cairo_fill(cr);
+	cairo_stroke(cr);
 	cairo_restore(cr);
     }
 
 #undef NR
 #undef DIFF
 
+    cairo_set_line_width(cr, parts->thickness);
     cairo_set_source_rgba(cr, parts->fg.r, parts->fg.g, parts->fg.b, parts->fg.a);
     cairo_rectangle(cr, parts->x, parts->y, parts->width, parts->height);
-    cairo_fill(cr);
+    cairo_stroke(cr);
 }
 
 void rect_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
@@ -135,7 +137,7 @@ gboolean rect_select(struct parts_t *parts, int x, int y, gboolean selected)
     x2 = x1 + parts->width;
     y1 = parts->y;
     y2 = y1 + parts->height;
-    
+
     if (x2 < x1) {
 	t = x1;
 	x1 = x2;
@@ -153,7 +155,15 @@ gboolean rect_select(struct parts_t *parts, int x, int y, gboolean selected)
     orig_y = parts->y;
     dragging_handle = -1;
     
-    return x >= x1 && x < x2 && y >= y1 && y < y2;
+    if (x >= x1 && x < x2 && y >= y1 - parts->thickness / 2 && y < y1 + parts->thickness)
+	return TRUE;
+    if (x >= x1 && x < x2 && y >= y2 - parts->thickness / 2 && y < y2 + parts->thickness)
+	return TRUE;
+    if (y >= y1 && y < y2 && x >= x1 - parts->thickness / 2 && x < x1 + parts->thickness)
+	return TRUE;
+    if (y >= y1 && y < y2 && x >= x2 - parts->thickness / 2 && x < x2 + parts->thickness)
+	return TRUE;
+    return FALSE;
 }
 
 void rect_drag_step(struct parts_t *p, int x, int y)
@@ -208,8 +218,12 @@ struct parts_t *rect_create(int x, int y)
     p->type = PARTS_RECT;
     p->x = x;
     p->y = y;
-    p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
+    p->fg.r = 1;
+    p->fg.g = 0;
+    p->fg.b = 0;
+    p->fg.a = 1;
     p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
+    p->thickness = 5;
     
     return p;
 }
