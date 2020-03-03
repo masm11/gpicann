@@ -6,6 +6,7 @@ enum {
     PARTS_ARROW,
     PARTS_TEXT,
     PARTS_RECT,
+    PARTS_MASK,
 
     PARTS_NR
 };
