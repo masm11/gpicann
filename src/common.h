@@ -1,6 +1,9 @@
 #ifndef COMMON_H__INCLUDED
 #define COMMON_H__INCLUDED
 
+#define likely(e) __builtin_expect(!!(e), 1)
+#define unlikely(e) __builtin_expect(!!(e), 0)
+
 enum {
     PARTS_BASE,
     PARTS_ARROW,

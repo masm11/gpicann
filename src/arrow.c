@@ -143,7 +143,7 @@ void arrow_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     
     cairo_save(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < HANDLE_NR; i++) {
 	cairo_rectangle(cr, handles[i].x, handles[i].y, handles[i].width, handles[i].height);
 	cairo_stroke(cr);
     }

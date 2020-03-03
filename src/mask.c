@@ -73,26 +73,26 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
 
 static inline unsigned int get_pixel(unsigned char *data, int x, int y, int width, int height, int stride)
 {
-    if (x >= width)
+    if (unlikely(x >= width))
 	x = width - 1;
-    if (x < 0)
+    if (unlikely(x < 0))
 	x = 0;
-    if (y >= height)
+    if (unlikely(y >= height))
 	y = height - 1;
-    if (y < 0)
+    if (unlikely(y < 0))
 	y = 0;
     return *(unsigned int *) (data + y * stride + x * 4);
 }
 
 static inline void put_pixel(unsigned char *data, int x, int y, int width, int height, int stride, unsigned int value)
 {
-    if (x >= width)
+    if (unlikely(x >= width))
 	x = width - 1;
-    if (x < 0)
+    if (unlikely(x < 0))
 	x = 0;
-    if (y >= height)
+    if (unlikely(y >= height))
 	y = height - 1;
-    if (y < 0)
+    if (unlikely(y < 0))
 	y = 0;
     *(unsigned int *) (data + y * stride + x * 4) = value;
 }
@@ -123,18 +123,14 @@ void mask_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
     for (int i = 0; i < 20; i++) {
 	for (int y = 0; y < height; y++) {
 	    for (int x = 0; x < width; x++) {
-		unsigned int argb[9];
-		int i = 0;
-		for (int dy = -1; dy < 2; dy++) {
-		    for (int dx = -1; dx < 2; dx++)
-			argb[i++] = get_pixel(data, x + dx, y + dy, width, height, stride);
-		}
-		
 		unsigned int r = 0, g = 0, b = 0;
-		for (i = 0; i < 9; i++) {
-		    r += (argb[i] >> 16) & 0xff;
-		    g += (argb[i] >>  8) & 0xff;
-		    b += (argb[i] >>  0) & 0xff;
+		for (int dy = -1; dy < 2; dy++) {
+		    for (int dx = -1; dx < 2; dx++) {
+			unsigned int argb = get_pixel(data, x + dx, y + dy, width, height, stride);
+			r += (argb >> 16) & 0xff;
+			g += (argb >>  8) & 0xff;
+			b += (argb >>  0) & 0xff;
+		    }
 		}
 		r /= 9;
 		g /= 9;
@@ -142,6 +138,7 @@ void mask_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
 		put_pixel(data2, x, y, width, height, stride, r << 16 | g << 8 | b);
 	    }
 	}
+	
 	unsigned char *t = data;
 	data = data2;
 	data2 = t;
@@ -174,7 +171,7 @@ void mask_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
     
     cairo_save(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < HANDLE_NR; i++) {
 	cairo_rectangle(cr, handles[i].x, handles[i].y, handles[i].width, handles[i].height);
 	cairo_stroke(cr);
     }
