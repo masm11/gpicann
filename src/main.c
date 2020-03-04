@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <gtk/gtk.h>
 
 #include "common.h"
@@ -590,6 +591,81 @@ static void mode_cb(GtkToolButton *item, gpointer user_data)
     mode = GPOINTER_TO_INT(user_data);
 }
 
+static cairo_status_t write_png_data(void *closure, const unsigned char *data, unsigned int length)
+{
+    FILE *fp = closure;
+    if (fwrite(data, length, 1, fp) != 1)
+	return CAIRO_STATUS_WRITE_ERROR;
+    return CAIRO_STATUS_SUCCESS;
+}
+
+static void export(GtkToolButton *item, gpointer user_data)
+{
+    int width = undoable->parts_list->width;
+    int height = undoable->parts_list->height;
+    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
+    cairo_t *cr = cairo_create(surface);
+    int err;
+    
+    for (struct parts_t *lp = undoable->parts_list; lp != NULL; lp = lp->next) {
+	cairo_save(cr);
+	call_draw(lp, NULL, cr, FALSE);
+	cairo_restore(cr);
+    }
+    cairo_surface_flush(surface);
+    
+    GtkWidget *dialog = gtk_file_chooser_dialog_new("Save as PNG",
+	    GTK_WINDOW(toplevel),
+	    GTK_FILE_CHOOSER_ACTION_SAVE,
+	    "Cancel", GTK_RESPONSE_CANCEL,
+	    "OK", GTK_RESPONSE_ACCEPT,
+	    NULL);
+    int res = gtk_dialog_run(GTK_DIALOG(dialog));
+    char *fname = NULL;
+    if (res == GTK_RESPONSE_ACCEPT)
+	fname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+    gtk_widget_destroy(dialog);
+    
+    if (fname == NULL)
+	goto end;
+    
+    FILE *fp = fopen(fname, "wb");
+    if (fp == NULL) {
+	err = errno;
+	goto err;
+    }
+    
+    cairo_surface_write_to_png_stream(surface, write_png_data, fp);
+    
+    if (ferror(fp)) {
+	err = errno;
+	fclose(fp);
+	goto err;
+    }
+    
+    if (fclose(fp) == EOF) {
+	err = errno;
+	goto err;
+    }
+    
+    goto end;
+    
+ err:
+    (void) 0;
+    GtkWidget *dialog2 = gtk_message_dialog_new(
+	    GTK_WINDOW(toplevel),
+	    GTK_DIALOG_MODAL,
+	    GTK_MESSAGE_ERROR,
+	    GTK_BUTTONS_CLOSE,
+	    "%s: %s", strerror(err), fname);
+    gtk_dialog_run(GTK_DIALOG(dialog2));
+    gtk_widget_destroy(dialog2);
+    
+ end:
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+}
+
 int main(int argc, char **argv)
 {
     gtk_init(&argc, &argv);
@@ -621,7 +697,7 @@ int main(int argc, char **argv)
     redoable = NULL;
     
     toplevel = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    g_signal_connect(G_OBJECT(toplevel), "delete-event", G_CALLBACK(exit), 0);
+    g_signal_connect_swapped(G_OBJECT(toplevel), "delete-event", G_CALLBACK(exit), 0);
     gtk_widget_add_events(toplevel, GDK_KEY_PRESS_MASK);
     g_signal_connect(G_OBJECT(toplevel), "key-press-event", G_CALLBACK(key_event), NULL);
     gtk_widget_show(toplevel);
@@ -633,6 +709,13 @@ int main(int argc, char **argv)
     GtkWidget *toolbar = gtk_toolbar_new();
     gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
     gtk_widget_show(toolbar);
+    {
+	GtkToolItem *item = gtk_tool_button_new(NULL, "download");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "folder-download");
+	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(export), NULL);
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
     {
 	GtkToolItem *item = gtk_tool_button_new(NULL, "ok");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "text-editor");
