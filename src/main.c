@@ -599,35 +599,22 @@ static cairo_status_t write_png_data(void *closure, const unsigned char *data, u
     return CAIRO_STATUS_SUCCESS;
 }
 
-static void export(GtkToolButton *item, gpointer user_data)
+static void save_as_png(cairo_surface_t *surface)
 {
-    int width = undoable->parts_list->width;
-    int height = undoable->parts_list->height;
-    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
-    cairo_t *cr = cairo_create(surface);
     int err;
-    
-    for (struct parts_t *lp = undoable->parts_list; lp != NULL; lp = lp->next) {
-	cairo_save(cr);
-	call_draw(lp, NULL, cr, FALSE);
-	cairo_restore(cr);
-    }
-    cairo_surface_flush(surface);
-    
+    char *fname = NULL;
     GtkWidget *dialog = gtk_file_chooser_dialog_new("Save as PNG",
 	    GTK_WINDOW(toplevel),
 	    GTK_FILE_CHOOSER_ACTION_SAVE,
 	    "Cancel", GTK_RESPONSE_CANCEL,
 	    "OK", GTK_RESPONSE_ACCEPT,
 	    NULL);
-    int res = gtk_dialog_run(GTK_DIALOG(dialog));
-    char *fname = NULL;
-    if (res == GTK_RESPONSE_ACCEPT)
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
 	fname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
     
     if (fname == NULL)
-	goto end;
+	return;
     
     FILE *fp = fopen(fname, "wb");
     if (fp == NULL) {
@@ -648,7 +635,7 @@ static void export(GtkToolButton *item, gpointer user_data)
 	goto err;
     }
     
-    goto end;
+    return;
     
  err:
     (void) 0;
@@ -660,8 +647,24 @@ static void export(GtkToolButton *item, gpointer user_data)
 	    "%s: %s", strerror(err), fname);
     gtk_dialog_run(GTK_DIALOG(dialog2));
     gtk_widget_destroy(dialog2);
+}
+
+static void export(GtkToolButton *item, gpointer user_data)
+{
+    int width = undoable->parts_list->width;
+    int height = undoable->parts_list->height;
+    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
+    cairo_t *cr = cairo_create(surface);
     
- end:
+    for (struct parts_t *lp = undoable->parts_list; lp != NULL; lp = lp->next) {
+	cairo_save(cr);
+	call_draw(lp, NULL, cr, FALSE);
+	cairo_restore(cr);
+    }
+    cairo_surface_flush(surface);
+    
+    save_as_png(surface);
+    
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
 }
