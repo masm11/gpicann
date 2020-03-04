@@ -146,7 +146,7 @@ static PangoLayout *make_shadow(PangoLayout *layout)
     return layout;
 }
 
-void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
+void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
@@ -218,7 +218,7 @@ void text_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
     g_object_unref(layout_shadow);
 }
 
-void text_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+void text_draw_handle(struct parts_t *parts, cairo_t *cr)
 {
     struct handle_geom_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);

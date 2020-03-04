@@ -97,7 +97,7 @@ static inline void put_pixel(unsigned char *data, int x, int y, int width, int h
     *(unsigned int *) (data + y * stride + x * 4) = value;
 }
 
-void mask_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
+void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
     int width = parts->width;
     int height = parts->height;
@@ -164,7 +164,7 @@ void mask_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean
     g_free(data2);
 }
 
-void mask_draw_handle(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr)
+void mask_draw_handle(struct parts_t *parts, cairo_t *cr)
 {
     struct handle_geom_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);

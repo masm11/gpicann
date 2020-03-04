@@ -105,7 +105,7 @@ static void history_redo(void)
 
 /****/
 
-static void base_draw(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected)
+static void base_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
     gdk_cairo_set_source_pixbuf(cr, parts->pixbuf, 0, 0);
     cairo_paint(cr);
@@ -119,8 +119,8 @@ static gboolean base_select(struct parts_t *parts, int x, int y, gboolean select
 /****/
 
 struct {
-    void (*draw)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr, gboolean selected);
-    void (*draw_handle)(struct parts_t *parts, GtkWidget *drawable, cairo_t *cr);
+    void (*draw)(struct parts_t *parts, cairo_t *cr, gboolean selected);
+    void (*draw_handle)(struct parts_t *parts, cairo_t *cr);
     gboolean (*select)(struct parts_t *parts, int x, int y, gboolean selected);
     void (*drag_step)(struct parts_t *parts, int x, int y);
     void (*drag_fini)(struct parts_t *parts, int x, int y);
@@ -132,24 +132,24 @@ struct {
     { mask_draw, mask_draw_handle, mask_select, mask_drag_step, mask_drag_fini },
 };
 
-static inline void call_draw(struct parts_t *p, GtkWidget *drawable, cairo_t *cr, gboolean selected)
+static inline void call_draw(struct parts_t *p, cairo_t *cr, gboolean selected)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
 	exit(1);
     }
     if (parts_ops[p->type].draw != NULL)
-	(parts_ops[p->type].draw)(p, drawable, cr, selected);
+	(parts_ops[p->type].draw)(p, cr, selected);
 }
 
-static inline void call_draw_handle(struct parts_t *p, GtkWidget *drawable, cairo_t *cr)
+static inline void call_draw_handle(struct parts_t *p, cairo_t *cr)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
 	exit(1);
     }
     if (parts_ops[p->type].draw_handle != NULL)
-	(parts_ops[p->type].draw_handle)(p, drawable, cr);
+	(parts_ops[p->type].draw_handle)(p, cr);
 }
 
 static inline gboolean call_select(struct parts_t *p, int x, int y, gboolean selected)
@@ -191,13 +191,13 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
     
     for (lp = undoable->parts_list; lp != NULL; lp = lp->next) {
 	cairo_save(cr);
-	call_draw(lp, drawable, cr, lp == undoable->selp);
+	call_draw(lp, cr, lp == undoable->selp);
 	cairo_restore(cr);
     }
     
     if ((lp = undoable->selp) != NULL) {
 	cairo_save(cr);
-	call_draw_handle(lp, drawable, cr);
+	call_draw_handle(lp, cr);
 	cairo_restore(cr);
     }
 }
@@ -658,7 +658,7 @@ static void export(GtkToolButton *item, gpointer user_data)
     
     for (struct parts_t *lp = undoable->parts_list; lp != NULL; lp = lp->next) {
 	cairo_save(cr);
-	call_draw(lp, NULL, cr, FALSE);
+	call_draw(lp, cr, FALSE);
 	cairo_restore(cr);
     }
     cairo_surface_flush(surface);
