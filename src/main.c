@@ -765,6 +765,7 @@ int main(int argc, char **argv)
     
     drawable = gtk_drawing_area_new();
     g_signal_connect(G_OBJECT(drawable), "draw", G_CALLBACK(draw), NULL);
+    gtk_widget_set_size_request(drawable, initial->width, initial->height);
     gtk_widget_show(drawable);
     gtk_container_add(GTK_CONTAINER(evbox), drawable);
     
