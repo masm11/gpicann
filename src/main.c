@@ -20,6 +20,8 @@ static struct history_t *undoable, *redoable;
 
 static GtkWidget *drawable;
 
+static gboolean text_editing = FALSE;
+
 /**** parts ****/
 
 struct parts_t *parts_alloc(void)
@@ -318,6 +320,7 @@ static void button_event_edit(GdkEvent *ev)
 	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
 	    if (previously_selected_parts == undoable->selp) {
 		focus_on_click(undoable->selp, ev->button.x, ev->button.y);
+		text_editing = TRUE;
 		step = STEP_EDIT_TEXT;
 	    } else {
 		previously_selected_parts = undoable->selp;
@@ -370,13 +373,17 @@ static void button_event_edit(GdkEvent *ev)
 		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
 		    if (p->type != PARTS_BASE) {
 			undoable->selp = p;
+			text_editing = FALSE;
 			if (p->type == PARTS_TEXT)
 			    step = STEP_AFTER_PRESS_TEXT;
 			else
 			    step = STEP_AFTER_PRESS;
 			break;
-		    } else
+		    } else {
 			undoable->selp = NULL;
+			text_editing = FALSE;
+			step = STEP_AFTER_PRESS;
+		    }
 		}
 	    }
 	}
@@ -551,6 +558,21 @@ static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data
 	}
 	if (ev->keyval == GDK_KEY_Z && (ev->state & GDK_MODIFIER_MASK) == (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) {
 	    history_redo();
+	    gtk_widget_queue_draw(drawable);
+	    return TRUE;
+	}
+	if (ev->keyval == GDK_KEY_BackSpace && !text_editing && undoable->selp != NULL) {
+	    history_copy_top_of_undoable();
+	    if (undoable->selp->back == NULL)
+		undoable->parts_list = undoable->selp->next;
+	    else
+		undoable->selp->back->next = undoable->selp->next;
+	    if (undoable->selp->next == NULL)
+		undoable->parts_list_end = undoable->selp->back;
+	    else
+		undoable->selp->next->back = undoable->selp->back;
+	    undoable->selp->back = undoable->selp->next = NULL;
+	    undoable->selp = NULL;	/* leaks a little */
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
 	}
