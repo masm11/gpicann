@@ -738,6 +738,8 @@ int main(int argc, char **argv)
     undoable = NULL;
     redoable = NULL;
     
+    prepare_icons();
+    
     GError *err = NULL;
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[1], &err);
     if (pixbuf == NULL) {
@@ -766,48 +768,53 @@ int main(int argc, char **argv)
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(toplevel), vbox);
     gtk_widget_show(vbox);
-    
+
     GtkWidget *toolbar = gtk_toolbar_new();
     gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
     gtk_widget_show(toolbar);
     {
-	GtkToolItem *item = gtk_tool_button_new(NULL, "download");
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "folder-download");
+	GtkToolItem *item = gtk_tool_button_new(NULL, "Export");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "file-export");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(export), NULL);
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
     {
-	GtkToolItem *item = gtk_tool_button_new(NULL, "ok");
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "text-editor");
+	GtkToolItem *item = gtk_separator_tool_item_new();
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
+    {
+	GtkToolItem *item = gtk_tool_button_new(NULL, "Select");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "select");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_EDIT));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
     {
-	GtkToolItem *item = gtk_tool_button_new(NULL, "rectangle");
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "media-playback-stop");
+	GtkToolItem *item = gtk_tool_button_new(NULL, "Rectangle");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "rectangle-outline");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_RECT));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
     {
-	GtkToolItem *item = gtk_tool_button_new(NULL, "arrow");
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "media-playlist-consecutive");
+	GtkToolItem *item = gtk_tool_button_new(NULL, "Arrow");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "arrow-bottom-left-thick");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_ARROW));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
     {
-	GtkToolItem *item = gtk_tool_button_new(NULL, "text");
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "insert-text");
+	GtkToolItem *item = gtk_tool_button_new(NULL, "Text");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "format-text");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_TEXT));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
     {
-	GtkToolItem *item = gtk_tool_button_new(NULL, "mask");
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "goa-panel");
+	GtkToolItem *item = gtk_tool_button_new(NULL, "Mask");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "blur");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_MASK));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));

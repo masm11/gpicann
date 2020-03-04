@@ -41,4 +41,6 @@ struct history_t {
 struct parts_t *parts_alloc(void);
 struct parts_t *parts_dup(struct parts_t *orig);
 
+void prepare_icons(void);
+
 #endif	/* ifndef COMMON_H__INCLUDED */
