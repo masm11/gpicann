@@ -54,6 +54,36 @@ static void history_append_parts(struct history_t *hp, struct parts_t *pp)
     hp->parts_list_end = pp;
 }
 
+static void history_insert_parts_after(struct history_t *hp, struct parts_t *pp, struct parts_t *after)
+{
+    pp->back = after;
+    pp->next = after->next;
+    
+    if (after->next != NULL)
+	after->next->back = pp;
+    else
+	hp->parts_list_end = pp;
+    after->next = pp;
+}
+
+static void history_unlink_parts(struct history_t *hp, struct parts_t *parts)
+{
+    if (parts->back == NULL)
+	hp->parts_list = parts->next;
+    else
+	parts->back->next = parts->next;
+    
+    if (parts->next == NULL)
+	hp->parts_list_end = parts->back;
+    else
+	parts->next->back = parts->back;
+    
+    parts->back = parts->next = NULL;
+    
+    if (hp->selp == parts)
+	hp->selp = NULL;
+}
+
 static struct history_t *history_dup(struct history_t *orig)
 {
     struct history_t *hp = g_new0(struct history_t, 1);
@@ -549,6 +579,30 @@ static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
     }
 }
 
+static void delete_it(void)
+{
+    history_copy_top_of_undoable();
+    history_unlink_parts(undoable, undoable->selp);	/* leaks a little */
+}
+
+static void raise_it(void)
+{
+    history_copy_top_of_undoable();
+    struct parts_t *p = undoable->selp;
+    history_unlink_parts(undoable, p);
+    history_append_parts(undoable, p);
+    undoable->selp = p;
+}
+
+static void lower_it(void)
+{
+    history_copy_top_of_undoable();
+    struct parts_t *p = undoable->selp;
+    history_unlink_parts(undoable, p);
+    history_insert_parts_after(undoable, p, undoable->parts_list);
+    undoable->selp = p;
+}
+
 static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data)
 {
     if (ev->type == GDK_KEY_PRESS) {
@@ -563,18 +617,22 @@ static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data
 	    return TRUE;
 	}
 	if (ev->keyval == GDK_KEY_BackSpace && !text_editing && undoable->selp != NULL) {
-	    history_copy_top_of_undoable();
-	    if (undoable->selp->back == NULL)
-		undoable->parts_list = undoable->selp->next;
-	    else
-		undoable->selp->back->next = undoable->selp->next;
-	    if (undoable->selp->next == NULL)
-		undoable->parts_list_end = undoable->selp->back;
-	    else
-		undoable->selp->next->back = undoable->selp->back;
-	    undoable->selp->back = undoable->selp->next = NULL;
-	    undoable->selp = NULL;	/* leaks a little */
+	    delete_it();
 	    gtk_widget_queue_draw(drawable);
+	    return TRUE;
+	}
+	if (ev->keyval == GDK_KEY_f && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK && !text_editing && undoable->selp != NULL) {
+	    raise_it();
+	    gtk_widget_queue_draw(drawable);
+	    return TRUE;
+	}
+	if (ev->keyval == GDK_KEY_b && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK && !text_editing && undoable->selp != NULL) {
+	    lower_it();
+	    gtk_widget_queue_draw(drawable);
+	    return TRUE;
+	}
+	if (ev->keyval == GDK_KEY_q && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK) {
+	    exit(0);
 	    return TRUE;
 	}
 	if (undoable->selp != NULL && undoable->selp->type == PARTS_TEXT) {
