@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "shapes.h"
+#include "handle.h"
 
 enum {
     HANDLE_TOP_LEFT,
@@ -22,53 +23,43 @@ static int beg_x = 0, beg_y = 0;
 static int orig_x = 0, orig_y = 0, orig_w = 0, orig_h = 0;
 static int dragging_handle = -1;
 
-struct handle_geom_t {
-    int x, y, width, height;
-};
-
-static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
+static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
 {
-    struct handle_geom_t *bp = bufp;
+    struct handle_t *bp = bufp;
     
-    bp->x = p->x;
-    bp->y = p->y;
+    bp->cx = p->x;
+    bp->cy = p->y;
     bp++;
     
-    bp->x = p->x + p->width / 2;
-    bp->y = p->y;
+    bp->cx = p->x + p->width / 2;
+    bp->cy = p->y;
     bp++;
     
-    bp->x = p->x + p->width;
-    bp->y = p->y;
+    bp->cx = p->x + p->width;
+    bp->cy = p->y;
     bp++;
     
-    bp->x = p->x;
-    bp->y = p->y + p->height / 2;
+    bp->cx = p->x;
+    bp->cy = p->y + p->height / 2;
     bp++;
     
-    bp->x = p->x + p->width;
-    bp->y = p->y + p->height / 2;
+    bp->cx = p->x + p->width;
+    bp->cy = p->y + p->height / 2;
     bp++;
     
-    bp->x = p->x;
-    bp->y = p->y + p->height;
+    bp->cx = p->x;
+    bp->cy = p->y + p->height;
     bp++;
     
-    bp->x = p->x + p->width / 2;
-    bp->y = p->y + p->height;
+    bp->cx = p->x + p->width / 2;
+    bp->cy = p->y + p->height;
     bp++;
     
-    bp->x = p->x + p->width;
-    bp->y = p->y + p->height;
+    bp->cx = p->x + p->width;
+    bp->cy = p->y + p->height;
     bp++;
     
-    for (int i = 0; i < HANDLE_NR; i++) {
-	bp = bufp + i;
-	bp->x -= 4;
-	bp->y -= 4;
-	bp->width = 8;
-	bp->height = 8;
-    }
+    handle_calc_geom(bufp, HANDLE_NR);
 }
 
 static inline unsigned int get_pixel(unsigned char *data, int x, int y, int width, int height, int stride)
@@ -166,21 +157,14 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 
 void mask_draw_handle(struct parts_t *parts, cairo_t *cr)
 {
-    struct handle_geom_t handles[HANDLE_NR];
+    struct handle_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
-    
-    cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < HANDLE_NR; i++) {
-	cairo_rectangle(cr, handles[i].x, handles[i].y, handles[i].width, handles[i].height);
-	cairo_stroke(cr);
-    }
-    cairo_restore(cr);
+    handle_draw(handles, HANDLE_NR, cr);
 }
 
 gboolean mask_select(struct parts_t *parts, int x, int y, gboolean selected)
 {
-    struct handle_geom_t handles[HANDLE_NR];
+    struct handle_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
     
     if (selected) {

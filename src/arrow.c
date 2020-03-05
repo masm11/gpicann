@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "shapes.h"
+#include "handle.h"
 
 enum {
     /*            EDGE_R
@@ -30,14 +31,9 @@ static int orig_edge_l_x = 0, orig_edge_l_y = 0, orig_edge_r_x = 0, orig_edge_r_
 static int orig_step_x = 0, orig_step_y = 0;
 static int dragging_handle = -1;
 
-struct handle_geom_t {
-    double cx, cy;
-    double x, y, width, height;
-};
-
-static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
+static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
 {
-    struct handle_geom_t *bp = bufp;
+    struct handle_t *bp = bufp;
     
     /* point */
     bp->cx = p->x + p->width;
@@ -78,18 +74,12 @@ static void make_handle_geoms(struct parts_t *p, struct handle_geom_t *bufp)
     bp->cy = wide * v2y / v2len + bufp[HANDLE_STEP].cy;
     bp++;
     
-    for (int i = 0; i < HANDLE_NR; i++) {
-	bp = bufp + i;
-	bp->x = bp->cx - 4;
-	bp->y = bp->cy - 4;
-	bp->width = 8;
-	bp->height = 8;
-    }
+    handle_calc_geom(bufp, HANDLE_NR);
 }
 
 void arrow_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
-    struct handle_geom_t handles[HANDLE_NR];
+    struct handle_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
     
 #define DIFF 4.0
@@ -138,19 +128,12 @@ void arrow_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 
 void arrow_draw_handle(struct parts_t *parts, cairo_t *cr)
 {
-    struct handle_geom_t handles[HANDLE_NR];
+    struct handle_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
-    
-    cairo_save(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < HANDLE_NR; i++) {
-	cairo_rectangle(cr, handles[i].x, handles[i].y, handles[i].width, handles[i].height);
-	cairo_stroke(cr);
-    }
-    cairo_restore(cr);
+    handle_draw(handles, HANDLE_NR, cr);
 }
 
-static int on_handle(struct handle_geom_t *handles, int x, int y)
+static int on_handle(struct handle_t *handles, int x, int y)
 {
     for (int i = 0; i < HANDLE_NR; i++) {
 	if (x >= handles[i].x && x < handles[i].x + handles[i].width
@@ -162,7 +145,7 @@ static int on_handle(struct handle_geom_t *handles, int x, int y)
     return -1;
 }
 
-static gboolean on_line(struct parts_t *parts, struct handle_geom_t *handles, int x, int y)
+static gboolean on_line(struct parts_t *parts, struct handle_t *handles, int x, int y)
 {
     double ax = x - handles[HANDLE_GRIP].cx;
     double ay = y - handles[HANDLE_GRIP].cy;
@@ -182,7 +165,7 @@ static gboolean on_line(struct parts_t *parts, struct handle_geom_t *handles, in
     return distance <= parts->thickness && inner_prod_ac >= 0 && inner_prod_bc >= 0;
 }
 
-static gboolean on_triangle(struct handle_geom_t *handles, int x, int y)
+static gboolean on_triangle(struct handle_t *handles, int x, int y)
 {
     double a0x = handles[HANDLE_EDGE_R].x - handles[HANDLE_EDGE_L].x;
     double a0y = handles[HANDLE_EDGE_R].y - handles[HANDLE_EDGE_L].y;
@@ -211,7 +194,7 @@ static gboolean on_triangle(struct handle_geom_t *handles, int x, int y)
 
 gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
 {
-    struct handle_geom_t handles[HANDLE_NR];
+    struct handle_t handles[HANDLE_NR];
     make_handle_geoms(parts, handles);
     
     beg_x = x;
@@ -239,7 +222,7 @@ gboolean arrow_select(struct parts_t *parts, int x, int y, gboolean selected)
 
 void arrow_drag_step(struct parts_t *p, int x, int y)
 {
-    struct handle_geom_t handles[HANDLE_NR];
+    struct handle_t handles[HANDLE_NR];
     make_handle_geoms(p, handles);
     
     int dx = x - beg_x;
