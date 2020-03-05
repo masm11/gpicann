@@ -28,7 +28,7 @@ void prepare_icons(void)
 		perror(icon_path);
 		exit(1);
 	    }
-	    fprintf(stderr, "Is is failed to create icon cache: %s", icon_path);
+	    fprintf(stderr, "It is failed to create icon cache: %s", icon_path);
 	    exit(1);
 	}
 	fclose(fp);
