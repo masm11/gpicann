@@ -7,7 +7,10 @@
 
 void prepare_icons(void)
 {
-    char *icon_dir = g_strdup_printf("%s/.cache/gpicann/icons", getenv("HOME"));
+    char *cache_dir = getenv("XDG_CACHE_HOME");
+    if (cache_dir == NULL)
+	cache_dir = g_strdup_printf("%s/.cache", getenv("HOME"));
+    char *icon_dir = g_strdup_printf("%s/gpicann/icons", cache_dir);
     char *mkdir = g_strdup_printf("mkdir -p %s", icon_dir);
     system(mkdir);
     
