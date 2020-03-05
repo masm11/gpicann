@@ -13,13 +13,8 @@ gpicann: $(OBJS)
 icons.o: icons.c common.h icons.inc
 	cc -O3 -Wall -c `pkg-config --cflags gtk+-3.0` $*.c
 
-icons.inc: $(patsubst %, %.inc, $(ICONS))
+icons.inc: $(patsubst %, ../icons/%.svg, $(ICONS))
 	./genicontable.sh $(ICONS) > $@.new
-	mv $@.new $@
-
-%.inc: ../icons/%.svg
-	label=$$(echo $* | sed -e 's|-|_|g'); \
-	sed -e 's|"|\\"|g' -e "s|^|static const char $${label}_svg[] = \"|" -e 's|$$|";|' < ../icons/$*.svg > $@.new
 	mv $@.new $@
 
 clean:
