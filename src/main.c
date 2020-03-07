@@ -247,7 +247,6 @@ static int mode = MODE_EDIT;
 
 static void button_event_edit(GdkEvent *ev)
 {
-    static struct parts_t *previously_selected_parts = NULL;
     static int step = 0;
     static int beg_x = 0, beg_y = 0;
     static guint32 last_click_time = 0;

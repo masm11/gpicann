@@ -141,13 +141,11 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
     gchar *text = g_strdup(parts->text);
     if (parts == focused_parts) {
-	printf("cursor_pos=%d, strlen=%lu\n", cursor_pos, strlen(text));
 	if (cursor_pos >= strlen(text)) {
 	    gchar *cursored_text = g_strdup_printf("%s ", text);
 	    g_free(text);
 	    text = cursored_text;
 	}
-	printf("->strlen=%lu\n", strlen(text));
     }
     
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, text);
