@@ -332,8 +332,8 @@ struct parts_t *text_create(int x, int y)
     p->type = PARTS_TEXT;
     p->x = x;
     p->y = y;
-    p->width = 100;
-    p->height = 50;
+    p->width = 200;
+    p->height = 100;
     p->fg.r = 1.0;
     p->fg.g = 0.0;
     p->fg.b = 0.0;
