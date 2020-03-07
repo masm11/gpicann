@@ -62,32 +62,6 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     handle_calc_geom(bufp, HANDLE_NR);
 }
 
-static inline unsigned int get_pixel(unsigned char *data, int x, int y, int width, int height, int stride)
-{
-    if (unlikely(x >= width))
-	x = width - 1;
-    if (unlikely(x < 0))
-	x = 0;
-    if (unlikely(y >= height))
-	y = height - 1;
-    if (unlikely(y < 0))
-	y = 0;
-    return *(unsigned int *) (data + y * stride + x * 4);
-}
-
-static inline void put_pixel(unsigned char *data, int x, int y, int width, int height, int stride, unsigned int value)
-{
-    if (unlikely(x >= width))
-	x = width - 1;
-    if (unlikely(x < 0))
-	x = 0;
-    if (unlikely(y >= height))
-	y = height - 1;
-    if (unlikely(y < 0))
-	y = 0;
-    *(unsigned int *) (data + y * stride + x * 4) = value;
-}
-
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
     int x = parts->x;
@@ -103,7 +77,7 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	y += height;
 	height = -height;
     }
-    
+
     int stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);
     unsigned char *data = g_malloc(stride * height);
     unsigned char *data2 = g_malloc(stride * height);
@@ -123,11 +97,10 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     cairo_pattern_destroy(pat);
     
-    struct timeval tv_beg;
-    gettimeofday(&tv_beg, NULL);
     for (int i = 0; i < 20; i++) {
 	for (int y = 0; y < height; y++) {
-	    for (int x = 0; x < width; x++) {
+	    unsigned char *datap = data + y * stride;
+	    for (int x = 0; x < width; x++, datap += 4) {
 		int dx_l, dx_r, dy_u, dy_d;
 		
 		if (unlikely(x == 0))
@@ -147,7 +120,6 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 		else
 		    dy_d = 0;
 		
-		unsigned char *datap = data + y * stride + x * 4;
 		unsigned int acc_r = 0, acc_g = 0, acc_b = 0;
 		
 #define SUM_UP() (			\
@@ -174,13 +146,13 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 		SUM_UP();
 		argb = *(unsigned int *) (datap + dy_d + dx_r);
 		SUM_UP();
-
+		
 #undef SUM_UP
 		
 		acc_r /= 9;
 		acc_g /= 9;
 		acc_b /= 9;
-		put_pixel(data2, x, y, width, height, stride, acc_r << 16 | acc_g << 8 | acc_b);
+		*(unsigned int *) (data2 + y * stride + x * 4) = acc_r << 16 | acc_g << 8 | acc_b;
 	    }
 	}
 	
@@ -188,11 +160,6 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	data = data2;
 	data2 = t;
     }
-    struct timeval tv_end;
-    gettimeofday(&tv_end, NULL);
-    tv_end.tv_sec -= tv_beg.tv_sec;
-    unsigned long usec = tv_end.tv_sec * 1000000 + tv_end.tv_usec - tv_beg.tv_usec;
-    printf("%fus\n", (double) usec / width / height);
 
     cairo_surface_t *cs2 = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_RGB24, width, height, stride);
     cairo_pattern_t *pat2 = cairo_pattern_create_for_surface(cs2);
