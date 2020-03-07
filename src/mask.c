@@ -90,8 +90,20 @@ static inline void put_pixel(unsigned char *data, int x, int y, int width, int h
 
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
+    int x = parts->x;
+    int y = parts->y;
     int width = parts->width;
     int height = parts->height;
+
+    if (width < 0) {
+	x += width;
+	width = -width;
+    }
+    if (height < 0) {
+	y += height;
+	height = -height;
+    }
+    
     int stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);
     unsigned char *data = g_malloc(stride * height);
     unsigned char *data2 = g_malloc(stride * height);
@@ -99,7 +111,7 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_pattern_t *pat = cairo_pattern_create_for_surface(cairo_get_target(cr));
     cairo_matrix_t mat;
     cairo_get_matrix(cr, &mat);
-    cairo_matrix_translate(&mat, parts->x, parts->y);
+    cairo_matrix_translate(&mat, x, y);
     cairo_pattern_set_matrix(pat, &mat);
     
     cairo_surface_t *cs1 = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_RGB24, width, height, stride);
@@ -139,12 +151,12 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_pattern_t *pat2 = cairo_pattern_create_for_surface(cs2);
     cairo_matrix_t mat2;
     cairo_get_matrix(cr, &mat2);
-    cairo_matrix_translate(&mat2, -(parts->x + mat2.x0), -(parts->y + mat2.y0));
+    cairo_matrix_translate(&mat2, -(x + mat2.x0), -(y + mat2.y0));
     cairo_pattern_set_matrix(pat2, &mat2);
     
     cairo_save(cr);
     cairo_set_source(cr, pat2);
-    cairo_rectangle(cr, parts->x, parts->y, parts->width, parts->height);
+    cairo_rectangle(cr, x, y, width, height);
     cairo_fill(cr);
     cairo_restore(cr);
     
