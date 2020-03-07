@@ -166,36 +166,31 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     pango_layout_set_attributes(layout, attr_list);
     
-    if (parts == focused_parts) {
-#if 0
-	PangoAttribute *curs_bg_pre = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
-#endif
-	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
-	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
-	int cursor_next = cursor_next_pos_in_bytes(text, cursor_pos);
-#if 0
-	curs_bg_pre->start_index = cursor_pos;
-	curs_bg_pre->end_index = cursor_pos;
-#endif
-	curs_bg->start_index = cursor_pos;
-	curs_bg->end_index = cursor_next;
-	curs_fg->start_index = cursor_pos;
-	curs_fg->end_index = cursor_next;
-	pango_attr_list_change(attr_list, curs_bg);
-#if 0
-	pango_attr_list_change(attr_list, curs_bg_pre);
-#endif
-	pango_attr_list_change(attr_list, curs_fg);
-    }
+    int cursoring_pos = cursor_pos;
     
     if (parts == focused_parts && preedit.attrs != NULL) {
 	if (strlen(preedit.str) != 0) {
-	    pango_attr_list_splice(attr_list, preedit.attrs, cursor_pos, strlen(preedit.str));
-	    gchar *str = insert_string(text, cursor_pos, preedit.str);
-	    pango_layout_set_text(layout, str, strlen(str));
+	    pango_attr_list_splice(attr_list, preedit.attrs, cursoring_pos, strlen(preedit.str));
+	    gchar *str = insert_string(text, cursoring_pos, preedit.str);
+	    g_free(text);
+	    text = str;
+	    pango_layout_set_text(layout, text, strlen(text));
+	    cursoring_pos += strlen(preedit.str);
 	}
     }
     
+    if (parts == focused_parts) {
+	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
+	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
+	int cursoring_next = cursor_next_pos_in_bytes(text, cursoring_pos);
+	curs_bg->start_index = cursoring_pos;
+	curs_bg->end_index = cursoring_next;
+	curs_fg->start_index = cursoring_pos;
+	curs_fg->end_index = cursoring_next;
+	pango_attr_list_change(attr_list, curs_bg);
+	pango_attr_list_change(attr_list, curs_fg);
+    }
+
     pango_layout_set_attributes(layout, attr_list);
     
     PangoLayout *layout_shadow = make_shadow(layout);
