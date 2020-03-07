@@ -78,11 +78,11 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     handle_calc_geom(bufp, HANDLE_NR);
 }
 
-static int cursor_next_pos_in_bytes(struct parts_t *parts, int pos)
+static int cursor_next_pos_in_bytes(const char *text, int pos)
 {
     glong pos_in_chars_till_pos, pos_in_chars_total;
-    gunichar *uni_str_till_pos = g_utf8_to_ucs4(parts->text, pos, NULL, &pos_in_chars_till_pos, NULL);
-    gunichar *uni_str_total = g_utf8_to_ucs4(parts->text, strlen(parts->text), NULL, &pos_in_chars_total, NULL);
+    gunichar *uni_str_till_pos = g_utf8_to_ucs4(text, pos, NULL, &pos_in_chars_till_pos, NULL);
+    gunichar *uni_str_total = g_utf8_to_ucs4(text, strlen(text), NULL, &pos_in_chars_total, NULL);
 
     if (pos_in_chars_till_pos + 1 <= pos_in_chars_total)
 	pos_in_chars_till_pos++;
@@ -97,11 +97,11 @@ static int cursor_next_pos_in_bytes(struct parts_t *parts, int pos)
     return new_pos;
 }
 
-static int cursor_prev_pos_in_bytes(struct parts_t *parts, int pos)
+static int cursor_prev_pos_in_bytes(const char *text, int pos)
 {
     glong pos_in_chars_till_pos, pos_in_chars_total;
-    gunichar *uni_str_till_pos = g_utf8_to_ucs4(parts->text, pos, NULL, &pos_in_chars_till_pos, NULL);
-    gunichar *uni_str_total = g_utf8_to_ucs4(parts->text, strlen(parts->text), NULL, &pos_in_chars_total, NULL);
+    gunichar *uni_str_till_pos = g_utf8_to_ucs4(text, pos, NULL, &pos_in_chars_till_pos, NULL);
+    gunichar *uni_str_total = g_utf8_to_ucs4(text, strlen(text), NULL, &pos_in_chars_total, NULL);
 
     if (pos_in_chars_till_pos - 1 >= 0)
 	pos_in_chars_till_pos--;
@@ -139,7 +139,18 @@ static PangoLayout *make_shadow(PangoLayout *layout)
 
 void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
-    PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
+    gchar *text = g_strdup(parts->text);
+    if (parts == focused_parts) {
+	printf("cursor_pos=%d, strlen=%lu\n", cursor_pos, strlen(text));
+	if (cursor_pos >= strlen(text)) {
+	    gchar *cursored_text = g_strdup_printf("%s ", text);
+	    g_free(text);
+	    text = cursored_text;
+	}
+	printf("->strlen=%lu\n", strlen(text));
+    }
+    
+    PangoLayout *layout = gtk_widget_create_pango_layout(drawable, text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
     PangoFontDescription *font_desc = pango_font_description_new();
@@ -150,31 +161,37 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     PangoAttrList *attr_list = pango_attr_list_new();
     PangoAttribute *attr = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
     attr->start_index = 0;
-    attr->end_index = strlen(parts->text);
+    attr->end_index = strlen(text);
     pango_attr_list_change(attr_list, attr);
     
     pango_layout_set_attributes(layout, attr_list);
     
     if (parts == focused_parts) {
+#if 0
 	PangoAttribute *curs_bg_pre = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
+#endif
 	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
 	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
-	int cursor_next = cursor_next_pos_in_bytes(parts, cursor_pos);
+	int cursor_next = cursor_next_pos_in_bytes(text, cursor_pos);
+#if 0
 	curs_bg_pre->start_index = cursor_pos;
 	curs_bg_pre->end_index = cursor_pos;
+#endif
 	curs_bg->start_index = cursor_pos;
 	curs_bg->end_index = cursor_next;
 	curs_fg->start_index = cursor_pos;
 	curs_fg->end_index = cursor_next;
 	pango_attr_list_change(attr_list, curs_bg);
+#if 0
 	pango_attr_list_change(attr_list, curs_bg_pre);
+#endif
 	pango_attr_list_change(attr_list, curs_fg);
     }
     
     if (parts == focused_parts && preedit.attrs != NULL) {
 	if (strlen(preedit.str) != 0) {
 	    pango_attr_list_splice(attr_list, preedit.attrs, cursor_pos, strlen(preedit.str));
-	    gchar *str = insert_string(parts->text, cursor_pos, preedit.str);
+	    gchar *str = insert_string(text, cursor_pos, preedit.str);
 	    pango_layout_set_text(layout, str, strlen(str));
 	}
     }
@@ -207,6 +224,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_font_description_free(font_desc);
     pango_attr_list_unref(attr_list);
     g_object_unref(layout_shadow);
+    
+    g_free(text);
 }
 
 void text_draw_handle(struct parts_t *parts, cairo_t *cr)
@@ -232,7 +251,6 @@ gboolean text_select(struct parts_t *parts, int x, int y, gboolean selected)
 		orig_w = parts->width;
 		orig_h = parts->height;
 		dragging_handle = i;
-		cursor_pos = 0;
 		return TRUE;
 	    }
 	}
@@ -261,7 +279,6 @@ gboolean text_select(struct parts_t *parts, int x, int y, gboolean selected)
     orig_x = parts->x;
     orig_y = parts->y;
     dragging_handle = -1;
-    cursor_pos = 0;
     
     if (x >= x1 && x < x2 && y >= y1 && y < y2)
 	return TRUE;
@@ -381,19 +398,19 @@ gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
     if (im_context != NULL) {
 	if (focused_parts != NULL) {
 	    if (ev->keyval == GDK_KEY_Right) {
-		int cursor_next = cursor_next_pos_in_bytes(focused_parts, cursor_pos);
+		int cursor_next = cursor_next_pos_in_bytes(focused_parts->text, cursor_pos);
 		cursor_pos = cursor_next;
 		gtk_widget_queue_draw(drawable);
 		return TRUE;
 	    }
 	    if (ev->keyval == GDK_KEY_Left) {
-		int cursor_next = cursor_prev_pos_in_bytes(focused_parts, cursor_pos);
+		int cursor_next = cursor_prev_pos_in_bytes(focused_parts->text, cursor_pos);
 		cursor_pos = cursor_next;
 		gtk_widget_queue_draw(drawable);
 		return TRUE;
 	    }
 	    if (ev->keyval == GDK_KEY_BackSpace) {
-		int new_pos = cursor_prev_pos_in_bytes(focused_parts, cursor_pos);
+		int new_pos = cursor_prev_pos_in_bytes(focused_parts->text, cursor_pos);
 		if (new_pos < cursor_pos) {
 		    gchar *new_str = g_strdup_printf("%.*s%s",
 			    new_pos, focused_parts->text,
