@@ -25,7 +25,8 @@ gboolean text_filter_keypress(struct parts_t *part, GdkEventKey *ev);
 void text_focus_in(void);
 void text_focus_out(void);
 void text_init(GtkWidget *top, GtkWidget *w);
-void focus_on_click(struct parts_t *parts, int x, int y);
+void text_focus(struct parts_t *parts, int x, int y);
+void text_unfocus(void);
 
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected);
 void mask_draw_handle(struct parts_t *parts, cairo_t *cr);

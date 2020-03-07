@@ -259,14 +259,8 @@ static void button_event_edit(GdkEvent *ev)
 	STEP_MOTION,
 	STEP_EDITING_TEXT,
 	STEP_AFTER_PRESS_TEXT,
-#if 0
-	STEP_IDLE_TEXT,
-	STEP_AFTER_PRESS_TEXT,
-	STEP_MOTION_TEXT,
-	STEP_EDIT_TEXT,
-#endif
     };
-
+    
     switch (step) {
     case STEP_IDLE:
 	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
@@ -347,11 +341,15 @@ static void button_event_edit(GdkEvent *ev)
 		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
 		    if (p->type == PARTS_BASE) {
 			undoable->selp = NULL;
+			text_editing = FALSE;
+			text_unfocus();
 			step = STEP_IDLE;
 		    } else if (p == undoable->selp) {
 			step = STEP_AFTER_PRESS_TEXT;
 		    } else {
 			undoable->selp = p;
+			text_editing = FALSE;
+			text_unfocus();
 			step = STEP_AFTER_PRESS;
 		    }
 		    break;
@@ -382,107 +380,13 @@ static void button_event_edit(GdkEvent *ev)
 		call_drag_step(p, ep->x, ep->y);
 		last_click_parts = NULL;
 		last_click_time = 0;
+		text_editing = FALSE;
 		step = STEP_MOTION;
 		break;
 	    }
 #undef EPSILON
 	}
 	break;
-
-
-#if 0
-    case STEP_IDLE_TEXT:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
-		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
-		    if (p->type != PARTS_BASE) {
-			undoable->selp = p;
-			if (p->type == PARTS_TEXT)
-			    step = STEP_AFTER_PRESS_TEXT;
-			else
-			    step = STEP_AFTER_PRESS;
-			break;
-		    } else
-			undoable->selp = NULL;
-		}
-	    }
-	}
-	break;
-	
-    case STEP_AFTER_PRESS_TEXT:
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    if (previously_selected_parts == undoable->selp) {
-		focus_on_click(undoable->selp, ev->button.x, ev->button.y);
-		text_editing = TRUE;
-		step = STEP_EDIT_TEXT;
-	    } else {
-		previously_selected_parts = undoable->selp;
-		step = STEP_IDLE_TEXT;
-	    }
-	    break;
-	}
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    GdkEventMotion *ep = &ev->motion;
-	    int dx = ep->x - beg_x;
-	    int dy = ep->y - beg_y;
-	    if (dx < 0)
-		dx = -dx;
-	    if (dy < 0)
-		dy = -dy;
-#define EPSILON 3
-	    if (dx >= EPSILON || dy >= EPSILON) {
-		history_copy_top_of_undoable();
-		struct parts_t *p = undoable->selp;
-		call_drag_step(p, ep->x, ep->y);
-		step = STEP_MOTION_TEXT;
-		break;
-	    }
-#undef EPSILON
-	}
-	break;
-	
-    case STEP_MOTION_TEXT:
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    struct parts_t *p = undoable->selp;
-	    call_drag_step(p, ep->x, ep->y);
-	    call_drag_fini(p, ep->x, ep->y);
-	    previously_selected_parts = undoable->selp;
-	    step = STEP_IDLE_TEXT;
-	    break;
-	}
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    GdkEventMotion *ep = &ev->motion;
-	    struct parts_t *p = undoable->selp;
-	    call_drag_step(p, ep->x, ep->y);
-	    break;
-	}
-	break;
-	
-    case STEP_EDIT_TEXT:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
-		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
-		    if (p->type != PARTS_BASE) {
-			undoable->selp = p;
-			text_editing = FALSE;
-			if (p->type == PARTS_TEXT)
-			    step = STEP_AFTER_PRESS_TEXT;
-			else
-			    step = STEP_AFTER_PRESS;
-			break;
-		    } else {
-			undoable->selp = NULL;
-			text_editing = FALSE;
-			step = STEP_AFTER_PRESS;
-		    }
-		}
-	    }
-	}
-	break;
-#endif
     }
     
     gtk_widget_queue_draw(drawable);

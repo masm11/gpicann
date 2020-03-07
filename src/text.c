@@ -155,7 +155,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     pango_layout_set_attributes(layout, attr_list);
     
-    if (selected) {
+    if (parts == focused_parts) {
 	PangoAttribute *curs_bg_pre = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
 	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
 	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
@@ -171,7 +171,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	pango_attr_list_change(attr_list, curs_fg);
     }
     
-    if (selected && preedit.attrs != NULL) {
+    if (parts == focused_parts && preedit.attrs != NULL) {
 	if (strlen(preedit.str) != 0) {
 	    pango_attr_list_splice(attr_list, preedit.attrs, cursor_pos, strlen(preedit.str));
 	    gchar *str = insert_string(parts->text, cursor_pos, preedit.str);
@@ -225,7 +225,6 @@ gboolean text_select(struct parts_t *parts, int x, int y, gboolean selected)
 	for (int i = 0; i < HANDLE_NR; i++) {
 	    if (x >= handles[i].x && x < handles[i].x + handles[i].width
 		    && y >= handles[i].y && y < handles[i].y + handles[i].height) {
-		focused_parts = parts;
 		beg_x = x;
 		beg_y = y;
 		orig_x = parts->x;
@@ -264,10 +263,8 @@ gboolean text_select(struct parts_t *parts, int x, int y, gboolean selected)
     dragging_handle = -1;
     cursor_pos = 0;
     
-    if (x >= x1 && x < x2 && y >= y1 && y < y2) {
-	focused_parts = parts;
+    if (x >= x1 && x < x2 && y >= y1 && y < y2)
 	return TRUE;
-    }
     return FALSE;
 }
 
@@ -364,10 +361,19 @@ void text_focus(struct parts_t *parts, int x, int y)
 	cursor_pos = new_cursor_pos;
 	focused_parts = parts;
 	gtk_widget_queue_draw(drawable);
+    } else {
+	cursor_pos = strlen(parts->text);
+	focused_parts = parts;
+	gtk_widget_queue_draw(drawable);
     }
     
     g_object_unref(layout);
     pango_font_description_free(font_desc);
+}
+
+void text_unfocus(void)
+{
+    focused_parts = NULL;
 }
 
 gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
