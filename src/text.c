@@ -349,7 +349,7 @@ static void insert_string_at_cursor(struct parts_t *parts, const char *str)
     cursor_pos += strlen(str);
 }
 
-void focus_on_click(struct parts_t *parts, int x, int y)
+void text_focus(struct parts_t *parts, int x, int y)
 {
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
