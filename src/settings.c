@@ -105,7 +105,25 @@ char *settings_get_font(void)
 int settings_get_thickness(void)
 {
     if (thickness != NULL)
-	return gtk_spin_button_get_value(GTK_SPIN_BUTTON(thickness));
+	return gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(thickness));
     else
 	return INITIAL_THICKNESS;
+}
+
+void settings_set_color(const GdkRGBA *rgba)
+{
+    if (color != NULL)
+	gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(color), rgba);
+}
+
+void settings_set_font(const char *fontname)
+{
+    if (font != NULL)
+	gtk_font_chooser_set_font(GTK_FONT_CHOOSER(font), fontname);
+}
+
+void settings_set_thickness(int value)
+{
+    if (thickness != NULL)
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(thickness), value);
 }

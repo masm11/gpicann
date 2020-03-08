@@ -239,6 +239,13 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 	call_draw_handle(lp, cr);
 	cairo_restore(cr);
     }
+    
+    struct parts_t *p = undoable->selp;
+    if (p == NULL)
+	p = undoable->parts_list;
+    settings_set_color(&p->fg);
+    settings_set_font(p->fontname);
+    settings_set_thickness(p->thickness);
 }
 
 /****/
