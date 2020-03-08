@@ -152,9 +152,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
-    PangoFontDescription *font_desc = pango_font_description_new();
-    pango_font_description_set_family(font_desc, parts->fontname);
-    pango_font_description_set_size(font_desc, 32768);
+    PangoFontDescription *font_desc = pango_font_description_from_string(parts->fontname);
     pango_layout_set_font_description(layout, font_desc);
     
     PangoAttrList *attr_list = pango_attr_list_new();
@@ -357,9 +355,7 @@ void text_focus(struct parts_t *parts, int x, int y)
     PangoLayout *layout = gtk_widget_create_pango_layout(drawable, parts->text);
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
-    PangoFontDescription *font_desc = pango_font_description_new();
-    pango_font_description_set_family(font_desc, parts->fontname);
-    pango_font_description_set_size(font_desc, 32768);
+    PangoFontDescription *font_desc = pango_font_description_from_string(parts->fontname);
     pango_layout_set_font_description(layout, font_desc);
     
     int new_cursor_pos, trail;

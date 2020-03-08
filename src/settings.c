@@ -3,7 +3,7 @@
 #include "settings.h"
 
 #define INITIAL_COLOR		"red"
-#define INITIAL_FONT		"Sans 10"
+#define INITIAL_FONT		"Sans 24"
 #define INITIAL_THICKNESS	7
 
 static GtkWidget *color;
