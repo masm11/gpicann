@@ -18,7 +18,8 @@ sudo cp gpicann /usr/bin/
 
 1. take a screenshot with another tool.
 
-2. ```
+2. invoke gpicann.
+   ```
    gpicann screenshot.png
    ```
 
