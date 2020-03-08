@@ -299,10 +299,8 @@ struct parts_t *arrow_create(int x, int y)
     p->type = PARTS_ARROW;
     p->x = x;
     p->y = y;
-    p->fg = *settings_get_color();
     p->triangle_len = 50;
     p->theta = M_PI / 8;
-    p->thickness = 10;
     
     return p;
 }

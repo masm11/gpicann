@@ -333,8 +333,6 @@ struct parts_t *text_create(int x, int y)
     p->y = y;
     p->width = 200;
     p->height = 100;
-    p->fontname = settings_get_font();
-    p->fg = *settings_get_color();
     p->text = g_strdup("");
     
     return p;

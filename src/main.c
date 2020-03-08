@@ -30,6 +30,11 @@ static gboolean text_editing = FALSE;
 struct parts_t *parts_alloc(void)
 {
     struct parts_t *p = g_new0(struct parts_t, 1);
+    
+    p->fg = *settings_get_color();
+    p->fontname = settings_get_font();
+    p->thickness = settings_get_thickness();
+    
     return p;
 }
 

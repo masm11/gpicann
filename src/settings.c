@@ -2,6 +2,10 @@
 
 #include "settings.h"
 
+#define INITIAL_COLOR		"red"
+#define INITIAL_FONT		"Sans 10"
+#define INITIAL_THICKNESS	7
+
 static GtkWidget *color;
 static GtkWidget *font;
 static GtkWidget *thickness;
@@ -31,29 +35,34 @@ static void thickness_changed_cb(GtkSpinButton *widget, gpointer user_data)
 	(*thickness_changed_callback)(settings_get_thickness());
 }
 
+static const GdkRGBA *initial_color(void)
+{
+    static gboolean inited = FALSE;
+    static GdkRGBA rgba;
+    if (!inited) {
+	gdk_rgba_parse(&rgba, INITIAL_COLOR);
+	inited = TRUE;
+    }
+    return &rgba;
+}
+
 GtkWidget *settings_create_widgets(void)
 {
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     
-    GdkRGBA rgba = {
-	.red = 1,
-	.green = 0,
-	.blue = 0,
-	.alpha = 1,
-    };
-    color = gtk_color_button_new_with_rgba(&rgba);
+    color = gtk_color_button_new_with_rgba(initial_color());
     g_signal_connect(G_OBJECT(color), "color-set", G_CALLBACK(color_changed_cb), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), color, FALSE, FALSE, 0);
     gtk_widget_show(color);
     
-    font = gtk_font_button_new_with_font("Sans 10");
+    font = gtk_font_button_new_with_font(INITIAL_FONT);
     g_signal_connect(G_OBJECT(font), "font-set", G_CALLBACK(font_changed_cb), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), font, FALSE, FALSE, 0);
     gtk_widget_show(font);
     
     thickness = gtk_spin_button_new_with_range(0, 1023, 1);
     g_signal_connect(G_OBJECT(thickness), "value-changed", G_CALLBACK(thickness_changed_cb), NULL);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(thickness), 5);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(thickness), INITIAL_THICKNESS);
     gtk_box_pack_start(GTK_BOX(hbox), thickness, FALSE, FALSE, 0);
     gtk_widget_show(thickness);
     
@@ -77,17 +86,26 @@ void settings_set_thickness_changed_callback(void (*func)(int))
 
 const GdkRGBA *settings_get_color(void)
 {
-    static GdkRGBA rgba;
-    gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(color), &rgba);
-    return &rgba;
+    if (color != NULL) {
+	static GdkRGBA rgba;
+	gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(color), &rgba);
+	return &rgba;
+    } else
+	return initial_color();
 }
 
 char *settings_get_font(void)
 {
-    return gtk_font_chooser_get_font(GTK_FONT_CHOOSER(font));
+    if (font != NULL)
+	return gtk_font_chooser_get_font(GTK_FONT_CHOOSER(font));
+    else
+	return g_strdup(INITIAL_FONT);
 }
 
 int settings_get_thickness(void)
 {
-    return gtk_spin_button_get_value(GTK_SPIN_BUTTON(thickness));
+    if (thickness != NULL)
+	return gtk_spin_button_get_value(GTK_SPIN_BUTTON(thickness));
+    else
+	return INITIAL_THICKNESS;
 }

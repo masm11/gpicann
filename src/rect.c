@@ -203,8 +203,6 @@ struct parts_t *rect_create(int x, int y)
     p->type = PARTS_RECT;
     p->x = x;
     p->y = y;
-    p->fg = *settings_get_color();
-    p->thickness = 5;
     
     return p;
 }
