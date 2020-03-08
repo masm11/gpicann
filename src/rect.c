@@ -83,7 +83,7 @@ void rect_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 #undef DIFF
 
     cairo_set_line_width(cr, parts->thickness);
-    cairo_set_source_rgba(cr, parts->fg.r, parts->fg.g, parts->fg.b, parts->fg.a);
+    cairo_set_source_rgba(cr, parts->fg.red, parts->fg.green, parts->fg.blue, 1);
     cairo_rectangle(cr, parts->x, parts->y, parts->width, parts->height);
     cairo_stroke(cr);
 }
@@ -203,11 +203,7 @@ struct parts_t *rect_create(int x, int y)
     p->type = PARTS_RECT;
     p->x = x;
     p->y = y;
-    p->fg.r = 1;
-    p->fg.g = 0;
-    p->fg.b = 0;
-    p->fg.a = 1;
-    p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
+    p->fg = *settings_get_color();
     p->thickness = 5;
     
     return p;

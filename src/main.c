@@ -703,9 +703,7 @@ static void color_changed_cb(const GdkRGBA *rgba)
     else
 	p = undoable->parts_list;
     
-    p->fg.r = rgba->red;
-    p->fg.g = rgba->green;
-    p->fg.b = rgba->blue;
+    p->fg = *rgba;
     
     gtk_widget_queue_draw(drawable);
 }

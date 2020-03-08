@@ -25,9 +25,7 @@ struct parts_t {
     double theta;
     char *fontname;
     char *text;
-    struct color_t {
-	double r, g, b, a;
-    } fg, bg;
+    GdkRGBA fg;
     
     GdkPixbuf *pixbuf;
 };

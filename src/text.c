@@ -158,7 +158,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_layout_set_font_description(layout, font_desc);
     
     PangoAttrList *attr_list = pango_attr_list_new();
-    PangoAttribute *attr = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
+    PangoAttribute *attr = pango_attr_foreground_new(0xffff * parts->fg.red, 0xffff * parts->fg.green, 0xffff * parts->fg.blue);
     attr->start_index = 0;
     attr->end_index = strlen(text);
     pango_attr_list_change(attr_list, attr);
@@ -179,7 +179,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     }
     
     if (parts == focused_parts) {
-	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.r, 0xffff * parts->fg.g, 0xffff * parts->fg.b);
+	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.red, 0xffff * parts->fg.green, 0xffff * parts->fg.blue);
 	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
 	int cursoring_next = cursor_next_pos_in_bytes(text, cursoring_pos);
 	curs_bg->start_index = cursoring_pos;
@@ -334,11 +334,7 @@ struct parts_t *text_create(int x, int y)
     p->width = 200;
     p->height = 100;
     p->fontname = settings_get_font();
-    p->fg.r = 1.0;
-    p->fg.g = 0.0;
-    p->fg.b = 0.0;
-    p->fg.a = 1.0;
-    p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
+    p->fg = *settings_get_color();
     p->text = g_strdup("");
     
     return p;

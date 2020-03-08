@@ -285,8 +285,6 @@ struct parts_t *mask_create(int x, int y)
     p->type = PARTS_MASK;
     p->x = x;
     p->y = y;
-    p->fg.r = p->fg.g = p->fg.b = p->fg.a = 1.0;
-    p->bg.r = p->bg.g = p->bg.b = p->bg.a = 1.0;
     
     return p;
 }
