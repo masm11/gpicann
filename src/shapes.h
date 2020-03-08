@@ -27,6 +27,7 @@ void text_focus_out(void);
 void text_init(GtkWidget *top, GtkWidget *w);
 void text_focus(struct parts_t *parts, int x, int y);
 void text_unfocus(void);
+gboolean text_has_focus(void);
 
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected);
 void mask_draw_handle(struct parts_t *parts, cairo_t *cr);

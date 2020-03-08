@@ -23,8 +23,6 @@ static struct history_t *undoable, *redoable;
 
 static GtkWidget *drawable;
 
-static gboolean text_editing = FALSE;
-
 /**** parts ****/
 
 struct parts_t *parts_alloc(void)
@@ -299,7 +297,6 @@ static void button_event_edit(GdkEvent *ev)
 	    if (ep->time - last_click_time < 500 && last_click_parts == undoable->selp && undoable->selp->type == PARTS_TEXT) {
 		/* double click */
 		text_focus(undoable->selp, ep->x, ep->y);
-		text_editing = TRUE;
 		step = STEP_EDITING_TEXT;
 	    } else {
 		/* maybe single */
@@ -355,14 +352,12 @@ static void button_event_edit(GdkEvent *ev)
 		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
 		    if (p->type == PARTS_BASE) {
 			undoable->selp = NULL;
-			text_editing = FALSE;
 			text_unfocus();
 			step = STEP_IDLE;
 		    } else if (p == undoable->selp) {
 			step = STEP_AFTER_PRESS_TEXT;
 		    } else {
 			undoable->selp = p;
-			text_editing = FALSE;
 			text_unfocus();
 			step = STEP_AFTER_PRESS;
 		    }
@@ -394,7 +389,7 @@ static void button_event_edit(GdkEvent *ev)
 		call_drag_step(p, ep->x, ep->y);
 		last_click_parts = NULL;
 		last_click_time = 0;
-		text_editing = FALSE;
+		text_unfocus();
 		step = STEP_MOTION;
 		break;
 	    }
@@ -489,6 +484,7 @@ static void button_event_text(GdkEvent *ev)
 	    struct parts_t *p = text_create(ev->button.x, ev->button.y);
 	    history_append_parts(hp, p);
 	    text_select(p, ev->button.x, ev->button.y, FALSE);
+	    text_focus(p, ev->button.x, ev->button.y);
 	    hp->selp = p;
 	    
 	    step++;
@@ -598,17 +594,17 @@ static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
 	}
-	if (ev->keyval == GDK_KEY_BackSpace && !text_editing && undoable->selp != NULL) {
+	if (ev->keyval == GDK_KEY_BackSpace && !text_has_focus() && undoable->selp != NULL) {
 	    delete_it();
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
 	}
-	if (ev->keyval == GDK_KEY_f && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK && !text_editing && undoable->selp != NULL) {
+	if (ev->keyval == GDK_KEY_f && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK && !text_has_focus() && undoable->selp != NULL) {
 	    raise_it();
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;
 	}
-	if (ev->keyval == GDK_KEY_b && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK && !text_editing && undoable->selp != NULL) {
+	if (ev->keyval == GDK_KEY_b && (ev->state & GDK_MODIFIER_MASK) == GDK_CONTROL_MASK && !text_has_focus() && undoable->selp != NULL) {
 	    lower_it();
 	    gtk_widget_queue_draw(drawable);
 	    return TRUE;

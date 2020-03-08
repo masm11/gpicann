@@ -378,6 +378,11 @@ void text_unfocus(void)
     focused_parts = NULL;
 }
 
+gboolean text_has_focus(void)
+{
+    return focused_parts != NULL;
+}
+
 gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
 {
     if (im_context != NULL) {
