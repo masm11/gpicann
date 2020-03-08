@@ -5,6 +5,7 @@
 #include "common.h"
 #include "shapes.h"
 #include "handle.h"
+#include "settings.h"
 
 enum {
     HANDLE_TOP_LEFT,
@@ -152,7 +153,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
     PangoFontDescription *font_desc = pango_font_description_new();
-    pango_font_description_set_family(font_desc, "Noto Sans Mono CJK JP");
+    pango_font_description_set_family(font_desc, parts->fontname);
     pango_font_description_set_size(font_desc, 32768);
     pango_layout_set_font_description(layout, font_desc);
     
@@ -332,6 +333,7 @@ struct parts_t *text_create(int x, int y)
     p->y = y;
     p->width = 200;
     p->height = 100;
+    p->fontname = settings_get_font();
     p->fg.r = 1.0;
     p->fg.g = 0.0;
     p->fg.b = 0.0;
@@ -362,7 +364,7 @@ void text_focus(struct parts_t *parts, int x, int y)
     pango_layout_set_width(layout, parts->width * PANGO_SCALE);
     
     PangoFontDescription *font_desc = pango_font_description_new();
-    pango_font_description_set_family(font_desc, "Noto Sans Mono CJK JP");
+    pango_font_description_set_family(font_desc, parts->fontname);
     pango_font_description_set_size(font_desc, 32768);
     pango_layout_set_font_description(layout, font_desc);
     

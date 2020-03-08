@@ -5,6 +5,7 @@
 #include "common.h"
 #include "shapes.h"
 #include "handle.h"
+#include "settings.h"
 
 enum {
     HANDLE_TOP_LEFT,

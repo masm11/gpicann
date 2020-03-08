@@ -5,6 +5,7 @@
 #include "common.h"
 #include "shapes.h"
 #include "handle.h"
+#include "settings.h"
 
 static GtkWidget *toplevel;
 
@@ -694,6 +695,49 @@ static void export(GtkToolButton *item, gpointer user_data)
     cairo_surface_destroy(surface);
 }
 
+static void color_changed_cb(const GdkRGBA *rgba)
+{
+    struct parts_t *p;
+    if (undoable->selp != NULL)
+	p = undoable->selp;
+    else
+	p = undoable->parts_list;
+    
+    p->fg.r = rgba->red;
+    p->fg.g = rgba->green;
+    p->fg.b = rgba->blue;
+    
+    gtk_widget_queue_draw(drawable);
+}
+
+static void font_changed_cb(const char *fontname)
+{
+    struct parts_t *p;
+    if (undoable->selp != NULL)
+	p = undoable->selp;
+    else
+	p = undoable->parts_list;
+    
+    if (p->fontname != NULL)
+	g_free(p->fontname);
+    p->fontname = g_strdup(fontname);
+    
+    gtk_widget_queue_draw(drawable);
+}
+
+static void thickness_changed_cb(int thickness)
+{
+    struct parts_t *p;
+    if (undoable->selp != NULL)
+	p = undoable->selp;
+    else
+	p = undoable->parts_list;
+    
+    p->thickness = thickness;
+    
+    gtk_widget_queue_draw(drawable);
+}
+
 int main(int argc, char **argv)
 {
     gtk_init(&argc, &argv);
@@ -736,9 +780,14 @@ int main(int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(toplevel), vbox);
     gtk_widget_show(vbox);
 
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+    gtk_widget_show(hbox);
+    
     GtkWidget *toolbar = gtk_toolbar_new();
-    gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), toolbar, FALSE, FALSE, 0);
     gtk_widget_show(toolbar);
+    gtk_toolbar_set_show_arrow(GTK_TOOLBAR(toolbar), FALSE);
     {
 	GtkToolItem *item = gtk_tool_button_new(NULL, "Export");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "file-export");
@@ -788,6 +837,18 @@ int main(int argc, char **argv)
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
     }
+    {
+	GtkToolItem *item = gtk_separator_tool_item_new();
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+	gtk_widget_show(GTK_WIDGET(item));
+    }
+    
+    GtkWidget *settings = settings_create_widgets();
+    gtk_box_pack_start(GTK_BOX(hbox), settings, FALSE, FALSE, 0);
+    gtk_widget_show(settings);
+    settings_set_color_changed_callback(color_changed_cb);
+    settings_set_font_changed_callback(font_changed_cb);
+    settings_set_thickness_changed_callback(thickness_changed_cb);
     
     GtkWidget *evbox = gtk_event_box_new();
     gtk_widget_add_events(evbox, GDK_KEY_PRESS_MASK);

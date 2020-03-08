@@ -23,6 +23,7 @@ struct parts_t {
     int thickness;
     int triangle_len;
     double theta;
+    char *fontname;
     char *text;
     struct color_t {
 	double r, g, b, a;
