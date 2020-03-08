@@ -704,6 +704,8 @@ static void export(GtkToolButton *item, gpointer user_data)
 
 static void color_changed_cb(const GdkRGBA *rgba)
 {
+    history_copy_top_of_undoable();
+    
     struct parts_t *p;
     if (undoable->selp != NULL)
 	p = undoable->selp;
@@ -717,6 +719,8 @@ static void color_changed_cb(const GdkRGBA *rgba)
 
 static void font_changed_cb(const char *fontname)
 {
+    history_copy_top_of_undoable();
+    
     struct parts_t *p;
     if (undoable->selp != NULL)
 	p = undoable->selp;
@@ -732,6 +736,8 @@ static void font_changed_cb(const char *fontname)
 
 static void thickness_changed_cb(int thickness)
 {
+    history_copy_top_of_undoable();
+    
     struct parts_t *p;
     if (undoable->selp != NULL)
 	p = undoable->selp;
