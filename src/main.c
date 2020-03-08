@@ -40,6 +40,8 @@ struct parts_t *parts_dup(struct parts_t *orig)
     p->next = p->back = NULL;
     if (p->text != NULL)
 	p->text = g_strdup(p->text);
+    if (p->fontname != NULL)
+	p->fontname = g_strdup(p->fontname);
     // p->pixbuf はそのままでいいかな
     return p;
 }
