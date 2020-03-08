@@ -62,6 +62,54 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     handle_calc_geom(bufp, HANDLE_NR);
 }
 
+static void blur_pixel(unsigned char *datap, int x, int y, int width, int height, int stride, unsigned char *data_dst)
+{
+    int dx_l, dx_r, dy_u, dy_d;
+    
+    if (unlikely(x == 0))
+	dx_l = 0;
+    else
+	dx_l = -4;
+    if (likely(x + 1 < width))
+	dx_r = 4;
+    else
+	dx_r = 0;
+    if (unlikely(y == 0))
+	dy_u = 0;
+    else
+	dy_u = -stride;
+    if (likely(y + 1 < height))
+	dy_d = stride;
+    else
+	dy_d = 0;
+    
+    unsigned int acc_r = 0, acc_g = 0, acc_b = 0;
+    
+#define SUM_UP(ptr) (			\
+    argb = *(unsigned int *) (ptr),	\
+    acc_r += (argb >> 16) & 0xff,	\
+    acc_g += (argb >>  8) & 0xff,	\
+    acc_b += (argb >>  0) & 0xff)
+    
+    unsigned int argb;
+    SUM_UP(datap + dy_u + dx_l);
+    SUM_UP(datap + dy_u);
+    SUM_UP(datap + dy_u + dx_r);
+    SUM_UP(datap + dx_l);
+    SUM_UP(datap);
+    SUM_UP(datap + dx_r);
+    SUM_UP(datap + dy_d + dx_l);
+    SUM_UP(datap + dy_d);
+    SUM_UP(datap + dy_d + dx_r);
+    
+#undef SUM_UP
+    
+    acc_r /= 9;
+    acc_g /= 9;
+    acc_b /= 9;
+    *(unsigned int *) data_dst = acc_r << 16 | acc_g << 8 | acc_b;
+}
+
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
     int x = parts->x;
@@ -97,55 +145,11 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     cairo_pattern_destroy(pat);
     
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 24; i++) {
 	for (int y = 0; y < height; y++) {
 	    unsigned char *datap = data + y * stride;
-	    for (int x = 0; x < width; x++, datap += 4) {
-		int dx_l, dx_r, dy_u, dy_d;
-		
-		if (unlikely(x == 0))
-		    dx_l = 0;
-		else
-		    dx_l = -4;
-		if (likely(x + 1 < width))
-		    dx_r = 4;
-		else
-		    dx_r = 0;
-		if (unlikely(y == 0))
-		    dy_u = 0;
-		else
-		    dy_u = -stride;
-		if (likely(y + 1 < height))
-		    dy_d = stride;
-		else
-		    dy_d = 0;
-		
-		unsigned int acc_r = 0, acc_g = 0, acc_b = 0;
-		
-#define SUM_UP(ptr) (			\
-    argb = *(unsigned int *) (ptr),	\
-    acc_r += (argb >> 16) & 0xff,	\
-    acc_g += (argb >>  8) & 0xff,	\
-    acc_b += (argb >>  0) & 0xff)
-
-		unsigned int argb;
-		SUM_UP(datap + dy_u + dx_l);
-		SUM_UP(datap + dy_u);
-		SUM_UP(datap + dy_u + dx_r);
-		SUM_UP(datap + dx_l);
-		SUM_UP(datap);
-		SUM_UP(datap + dx_r);
-		SUM_UP(datap + dy_d + dx_l);
-		SUM_UP(datap + dy_d);
-		SUM_UP(datap + dy_d + dx_r);
-		
-#undef SUM_UP
-		
-		acc_r /= 9;
-		acc_g /= 9;
-		acc_b /= 9;
-		*(unsigned int *) (data2 + y * stride + x * 4) = acc_r << 16 | acc_g << 8 | acc_b;
-	    }
+	    for (int x = 0; x < width; x++, datap += 4)
+		blur_pixel(datap, x, y, width, height, stride, data2 + y * stride + x * 4);
 	}
 	
 	unsigned char *t = data;
