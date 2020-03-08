@@ -122,30 +122,22 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 		
 		unsigned int acc_r = 0, acc_g = 0, acc_b = 0;
 		
-#define SUM_UP() (			\
+#define SUM_UP(ptr) (			\
+    argb = *(unsigned int *) (ptr),	\
     acc_r += (argb >> 16) & 0xff,	\
     acc_g += (argb >>  8) & 0xff,	\
     acc_b += (argb >>  0) & 0xff)
 
 		unsigned int argb;
-		argb = *(unsigned int *) (datap + dy_u + dx_l);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dy_u);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dy_u + dx_r);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dx_l);
-		SUM_UP();
-		argb = *(unsigned int *) (datap);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dx_r);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dy_d + dx_l);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dy_d);
-		SUM_UP();
-		argb = *(unsigned int *) (datap + dy_d + dx_r);
-		SUM_UP();
+		SUM_UP(datap + dy_u + dx_l);
+		SUM_UP(datap + dy_u);
+		SUM_UP(datap + dy_u + dx_r);
+		SUM_UP(datap + dx_l);
+		SUM_UP(datap);
+		SUM_UP(datap + dx_r);
+		SUM_UP(datap + dy_d + dx_l);
+		SUM_UP(datap + dy_d);
+		SUM_UP(datap + dy_d + dx_r);
 		
 #undef SUM_UP
 		
