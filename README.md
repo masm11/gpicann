@@ -13,11 +13,9 @@
 ```sh
 git clone https://github.com/masm11/gpicann.git
 cd gpicann
-cd src
+./configure --prefix=/usr
 make
-sudo cp gpicann /usr/bin/
-cd ../
-sudo cp gpicann.desktop /usr/share/applications/
+sudo make install
 ```
 
 ## Usage
@@ -28,6 +26,7 @@ sudo cp gpicann.desktop /usr/share/applications/
    ```
    gpicann screenshot.png
    ```
+   or right-click on a PNG file and select gpicann on GUI.
 
 ## How to
 
