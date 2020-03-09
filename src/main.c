@@ -804,6 +804,7 @@ int main(int argc, char **argv)
     gtk_toolbar_set_show_arrow(GTK_TOOLBAR(toolbar), FALSE);
     {
 	GtkToolItem *item = gtk_tool_button_new(NULL, "Export");
+	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), "Export");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "file-export");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(export), NULL);
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
@@ -817,6 +818,7 @@ int main(int argc, char **argv)
     GtkToolItem *first_radio_tool_button;
     {
 	GtkToolItem *item = gtk_radio_tool_button_new_from_widget(NULL);
+	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), "Select");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "select");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_EDIT));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
@@ -825,6 +827,7 @@ int main(int argc, char **argv)
     }
     {
 	GtkToolItem *item = gtk_radio_tool_button_new_from_widget(GTK_RADIO_TOOL_BUTTON(first_radio_tool_button));
+	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), "Rectangle");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "rectangle-outline");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_RECT));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
@@ -832,6 +835,7 @@ int main(int argc, char **argv)
     }
     {
 	GtkToolItem *item = gtk_radio_tool_button_new_from_widget(GTK_RADIO_TOOL_BUTTON(first_radio_tool_button));
+	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), "Arrow");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "arrow-bottom-left-thick");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_ARROW));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
@@ -839,6 +843,7 @@ int main(int argc, char **argv)
     }
     {
 	GtkToolItem *item = gtk_radio_tool_button_new_from_widget(GTK_RADIO_TOOL_BUTTON(first_radio_tool_button));
+	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), "Text");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "format-text");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_TEXT));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
@@ -846,6 +851,7 @@ int main(int argc, char **argv)
     }
     {
 	GtkToolItem *item = gtk_radio_tool_button_new_from_widget(GTK_RADIO_TOOL_BUTTON(first_radio_tool_button));
+	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), "Blur");
 	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "blur");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(mode_cb), GINT_TO_POINTER(MODE_MASK));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
