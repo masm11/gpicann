@@ -1,5 +1,5 @@
 
-SUBDIRS = src
+SUBDIRS = src po
 
 applicationsdir = $(datarootdir)/applications
 

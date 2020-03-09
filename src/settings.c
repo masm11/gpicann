@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 
+#include "common.h"
 #include "settings.h"
 
 #define INITIAL_COLOR		"red"
@@ -51,19 +52,19 @@ GtkWidget *settings_create_widgets(void)
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     
     color = gtk_color_button_new_with_rgba(initial_color());
-    gtk_widget_set_tooltip_text(color, "Color");
+    gtk_widget_set_tooltip_text(color, _("Color"));
     g_signal_connect(G_OBJECT(color), "color-set", G_CALLBACK(color_changed_cb), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), color, FALSE, FALSE, 0);
     gtk_widget_show(color);
     
     font = gtk_font_button_new_with_font(INITIAL_FONT);
-    gtk_widget_set_tooltip_text(font, "Font");
+    gtk_widget_set_tooltip_text(font, _("Font"));
     g_signal_connect(G_OBJECT(font), "font-set", G_CALLBACK(font_changed_cb), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), font, FALSE, FALSE, 0);
     gtk_widget_show(font);
     
     thickness = gtk_spin_button_new_with_range(0, 1023, 1);
-    gtk_widget_set_tooltip_text(thickness, "Thickness");
+    gtk_widget_set_tooltip_text(thickness, _("Thickness"));
     g_signal_connect(G_OBJECT(thickness), "value-changed", G_CALLBACK(thickness_changed_cb), NULL);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(thickness), INITIAL_THICKNESS);
     gtk_box_pack_start(GTK_BOX(hbox), thickness, FALSE, FALSE, 0);

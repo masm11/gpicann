@@ -1,6 +1,11 @@
 #ifndef COMMON_H__INCLUDED
 #define COMMON_H__INCLUDED
 
+#include "config.h"
+#include <locale.h>
+#include "gettext.h"
+#define _(String) gettext(String)
+
 #define likely(e) __builtin_expect(!!(e), 1)
 #define unlikely(e) __builtin_expect(!!(e), 0)
 

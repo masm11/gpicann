@@ -1,0 +1,13 @@
+	../src/arrow.c \
+	../src/common.h \
+	../src/gettext.h \
+	../src/handle.c \
+	../src/handle.h \
+	../src/icons.c \
+	../src/main.c \
+	../src/mask.c \
+	../src/rect.c \
+	../src/settings.c \
+	../src/settings.h \
+	../src/shapes.h \
+	../src/text.c

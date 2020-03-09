@@ -23,7 +23,11 @@ AC_C_INLINE
 # Checks for library functions.
 AC_CHECK_FUNCS([strerror])
 
+IT_PROG_INTLTOOL(0.50.0)
+GETTEXT_PACKAGE="${PACKAGE}"
+AC_SUBST(GETTEXT_PACKAGE)
+
 PKG_CHECK_MODULES(GTK, [gtk+-3.0])
 
-AC_CONFIG_FILES([src/Makefile Makefile])
+AC_CONFIG_FILES([src/Makefile po/Makefile.in Makefile])
 AC_OUTPUT
