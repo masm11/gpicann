@@ -11,6 +11,8 @@
 ## Installation
 
 ```sh
+git clone https://github.com/masm11/gpicann.git
+cd gpicann
 cd src
 make
 sudo cp gpicann /usr/bin/
