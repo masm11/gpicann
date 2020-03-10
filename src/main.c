@@ -340,11 +340,11 @@ static void save_as_png(cairo_surface_t *surface)
 {
     int err;
     char *fname = NULL;
-    GtkWidget *dialog = gtk_file_chooser_dialog_new("Save as PNG",
+    GtkWidget *dialog = gtk_file_chooser_dialog_new(_("Save as PNG"),
 	    GTK_WINDOW(toplevel),
 	    GTK_FILE_CHOOSER_ACTION_SAVE,
-	    "Cancel", GTK_RESPONSE_CANCEL,
-	    "OK", GTK_RESPONSE_ACCEPT,
+	    _("Cancel"), GTK_RESPONSE_CANCEL,
+	    _("OK"), GTK_RESPONSE_ACCEPT,
 	    NULL);
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
 	fname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));

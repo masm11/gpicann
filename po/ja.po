@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpicann 0.90\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-11 06:32+0900\n"
+"POT-Creation-Date: 2020-03-11 06:53+0900\n"
 "PO-Revision-Date: 2020-03-10 00:37+0900\n"
 "Last-Translator:  <masm+github@masm11.me>\n"
 "Language-Team: Japanese <translation-team-ja@lists.sourceforge.net>\n"
@@ -16,6 +16,18 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+
+#: ../src/main.c:343
+msgid "Save as PNG"
+msgstr "PNGで保存"
+
+#: ../src/main.c:346
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: ../src/main.c:347
+msgid "OK"
+msgstr "OK"
 
 #: ../src/main.c:363
 msgid "The file already exists. Overwrite it?"
