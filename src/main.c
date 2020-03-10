@@ -180,7 +180,7 @@ void call_draw(struct parts_t *p, cairo_t *cr, gboolean selected)
 	exit(1);
     }
     if (parts_ops[p->type].draw != NULL)
-	(parts_ops[p->type].draw)(p, cr, selected);
+	(*parts_ops[p->type].draw)(p, cr, selected);
 }
 
 void call_draw_handle(struct parts_t *p, cairo_t *cr)
@@ -190,7 +190,7 @@ void call_draw_handle(struct parts_t *p, cairo_t *cr)
 	exit(1);
     }
     if (parts_ops[p->type].draw_handle != NULL)
-	(parts_ops[p->type].draw_handle)(p, cr);
+	(*parts_ops[p->type].draw_handle)(p, cr);
 }
 
 gboolean call_select(struct parts_t *p, int x, int y, gboolean selected)
@@ -200,7 +200,7 @@ gboolean call_select(struct parts_t *p, int x, int y, gboolean selected)
 	exit(1);
     }
     if (parts_ops[p->type].select != NULL)
-	return (parts_ops[p->type].select)(p, x, y, selected);
+	return (*parts_ops[p->type].select)(p, x, y, selected);
     return FALSE;
 }
 
@@ -211,7 +211,7 @@ void call_drag_step(struct parts_t *p, int x, int y)
 	exit(1);
     }
     if (parts_ops[p->type].drag_step != NULL)
-	(parts_ops[p->type].drag_step)(p, x, y);
+	(*parts_ops[p->type].drag_step)(p, x, y);
 }
 
 void call_drag_fini(struct parts_t *p, int x, int y)
@@ -221,7 +221,7 @@ void call_drag_fini(struct parts_t *p, int x, int y)
 	exit(1);
     }
     if (parts_ops[p->type].drag_fini != NULL)
-	(parts_ops[p->type].drag_fini)(p, x, y);
+	(*parts_ops[p->type].drag_fini)(p, x, y);
 }
 
 /****/
