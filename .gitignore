@@ -11,3 +11,7 @@ config.log
 config.status
 src/.deps
 stamp-h1
+po/Makefile.in
+po/POTFILES
+po/ja.gmo
+po/stamp-it
