@@ -15,6 +15,7 @@ struct mode_edit_work_t {
 static void mode_edit_init(struct mode_edit_work_t *w)
 {
     memset(w, 0, sizeof *w);
+    undoable->selp = NULL;
 }
 
 static void mode_edit_handle(struct mode_edit_work_t *w, GdkEvent *ev)
@@ -155,6 +156,7 @@ static void mode_edit_handle(struct mode_edit_work_t *w, GdkEvent *ev)
 
 static void mode_edit_fini(struct mode_edit_work_t *w)
 {
+    undoable->selp = NULL;
 }
 
 struct mode_rect_work_t {
@@ -164,6 +166,7 @@ struct mode_rect_work_t {
 static void mode_rect_init(struct mode_rect_work_t *w)
 {
     memset(w, 0, sizeof *w);
+    undoable->selp = NULL;
 }
 
 static void mode_rect_handle(struct mode_rect_work_t *w, GdkEvent *ev)
@@ -208,6 +211,7 @@ struct mode_arrow_work_t {
 static void mode_arrow_init(struct mode_arrow_work_t *w)
 {
     memset(w, 0, sizeof *w);
+    undoable->selp = NULL;
 }
 
 static void mode_arrow_handle(struct mode_arrow_work_t *w, GdkEvent *ev)
@@ -252,6 +256,7 @@ struct mode_text_work_t {
 static void mode_text_init(struct mode_text_work_t *w)
 {
     memset(w, 0, sizeof *w);
+    undoable->selp = NULL;
 }
 
 static void mode_text_handle(struct mode_text_work_t *w, GdkEvent *ev)
@@ -264,9 +269,7 @@ static void mode_text_handle(struct mode_text_work_t *w, GdkEvent *ev)
 	    
 	    struct parts_t *p = text_create(ev->button.x, ev->button.y);
 	    history_append_parts(hp, p);
-	    text_select(p, ev->button.x, ev->button.y, FALSE);
 	    text_focus(p, ev->button.x, ev->button.y);
-	    hp->selp = p;
 	    
 	    w->step++;
 	}
@@ -293,6 +296,7 @@ struct mode_mask_work_t {
 static void mode_mask_init(struct mode_mask_work_t *w)
 {
     memset(w, 0, sizeof *w);
+    undoable->selp = NULL;
 }
 
 static void mode_mask_handle(struct mode_mask_work_t *w, GdkEvent *ev)
@@ -348,11 +352,11 @@ static struct {
 #define INIT(func) ((void (*)(union mode_work_t *)) (func))
 #define HANDLE(func) ((void (*)(union mode_work_t *, GdkEvent *)) (func))
 #define FINI(func) ((void (*)(union mode_work_t *)) (func))
-    { INIT(mode_edit_init), HANDLE(mode_edit_handle), FINI(mode_edit_fini) },
-    { INIT(mode_rect_init), HANDLE(mode_rect_handle), FINI(mode_rect_fini) },
+    { INIT(mode_edit_init),  HANDLE(mode_edit_handle),  FINI(mode_edit_fini) },
+    { INIT(mode_rect_init),  HANDLE(mode_rect_handle),  FINI(mode_rect_fini) },
     { INIT(mode_arrow_init), HANDLE(mode_arrow_handle), FINI(mode_arrow_fini) },
-    { INIT(mode_text_init), HANDLE(mode_text_handle), FINI(mode_text_fini) },
-    { INIT(mode_mask_init), HANDLE(mode_mask_handle), FINI(mode_mask_fini) },
+    { INIT(mode_text_init),  HANDLE(mode_text_handle),  FINI(mode_text_fini) },
+    { INIT(mode_mask_init),  HANDLE(mode_mask_handle),  FINI(mode_mask_fini) },
 #undef INIT
 #undef HANDLE
 #undef FINI
@@ -363,6 +367,7 @@ void mode_init(GtkWidget *widget)
     drawable = widget;
     mode = MODE_EDIT;
     (*modes[mode].init)(&work);
+    gtk_widget_queue_draw(drawable);
 }
 
 void mode_handle(GdkEvent *ev)
