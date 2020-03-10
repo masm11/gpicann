@@ -103,7 +103,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_gpicann_OBJECTS = arrow.$(OBJEXT) handle.$(OBJEXT) icons.$(OBJEXT) \
 	main.$(OBJEXT) mask.$(OBJEXT) rect.$(OBJEXT) \
-	settings.$(OBJEXT) text.$(OBJEXT)
+	settings.$(OBJEXT) text.$(OBJEXT) state_mgmt.$(OBJEXT)
 nodist_gpicann_OBJECTS =
 gpicann_OBJECTS = $(am_gpicann_OBJECTS) $(nodist_gpicann_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -126,7 +126,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/arrow.Po ./$(DEPDIR)/handle.Po \
 	./$(DEPDIR)/icons.Po ./$(DEPDIR)/main.Po ./$(DEPDIR)/mask.Po \
 	./$(DEPDIR)/rect.Po ./$(DEPDIR)/settings.Po \
-	./$(DEPDIR)/text.Po
+	./$(DEPDIR)/state_mgmt.Po ./$(DEPDIR)/text.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -277,7 +277,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c \
+gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c state_mgmt.c \
                   common.h handle.h settings.h shapes.h gettext.h
 
 nodist_gpicann_SOURCES = icons.inc
@@ -379,6 +379,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mask.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rect.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/settings.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_mgmt.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -539,6 +540,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mask.Po
 	-rm -f ./$(DEPDIR)/rect.Po
 	-rm -f ./$(DEPDIR)/settings.Po
+	-rm -f ./$(DEPDIR)/state_mgmt.Po
 	-rm -f ./$(DEPDIR)/text.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -592,6 +594,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mask.Po
 	-rm -f ./$(DEPDIR)/rect.Po
 	-rm -f ./$(DEPDIR)/settings.Po
+	-rm -f ./$(DEPDIR)/state_mgmt.Po
 	-rm -f ./$(DEPDIR)/text.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

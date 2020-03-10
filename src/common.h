@@ -41,9 +41,19 @@ struct history_t {
     struct parts_t *selp;
 };
 
+extern struct history_t *undoable, *redoable;
 
 struct parts_t *parts_alloc(void);
 struct parts_t *parts_dup(struct parts_t *orig);
+
+void history_copy_top_of_undoable(void);
+void history_append_parts(struct history_t *hp, struct parts_t *pp);
+
+void call_draw(struct parts_t *p, cairo_t *cr, gboolean selected);;
+void call_draw_handle(struct parts_t *p, cairo_t *cr);
+gboolean call_select(struct parts_t *p, int x, int y, gboolean selected);
+void call_drag_step(struct parts_t *p, int x, int y);
+void call_drag_fini(struct parts_t *p, int x, int y);
 
 void prepare_icons(void);
 

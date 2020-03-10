@@ -6,6 +6,7 @@
 #include "shapes.h"
 #include "handle.h"
 #include "settings.h"
+#include "state_mgmt.h"
 
 static GtkWidget *toplevel;
 
@@ -19,7 +20,7 @@ static GtkWidget *toplevel;
  *
  * ステップ数が少ないことが前提の構造。
  */
-static struct history_t *undoable, *redoable;
+struct history_t *undoable, *redoable;
 
 static GtkWidget *drawable;
 
@@ -51,7 +52,7 @@ struct parts_t *parts_dup(struct parts_t *orig)
 
 /**** history ****/
 
-static void history_append_parts(struct history_t *hp, struct parts_t *pp)
+void history_append_parts(struct history_t *hp, struct parts_t *pp)
 {
     if (hp->parts_list != NULL) {
 	pp->back = hp->parts_list_end;
@@ -105,7 +106,7 @@ static struct history_t *history_dup(struct history_t *orig)
     return hp;
 }
 
-static void history_copy_top_of_undoable(void)
+void history_copy_top_of_undoable(void)
 {
     struct history_t *hp = history_dup(undoable);
     hp->next = undoable;
@@ -169,7 +170,7 @@ struct {
     { mask_draw, mask_draw_handle, mask_select, mask_drag_step, mask_drag_fini },
 };
 
-static inline void call_draw(struct parts_t *p, cairo_t *cr, gboolean selected)
+void call_draw(struct parts_t *p, cairo_t *cr, gboolean selected)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
@@ -179,7 +180,7 @@ static inline void call_draw(struct parts_t *p, cairo_t *cr, gboolean selected)
 	(parts_ops[p->type].draw)(p, cr, selected);
 }
 
-static inline void call_draw_handle(struct parts_t *p, cairo_t *cr)
+void call_draw_handle(struct parts_t *p, cairo_t *cr)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
@@ -189,7 +190,7 @@ static inline void call_draw_handle(struct parts_t *p, cairo_t *cr)
 	(parts_ops[p->type].draw_handle)(p, cr);
 }
 
-static inline gboolean call_select(struct parts_t *p, int x, int y, gboolean selected)
+gboolean call_select(struct parts_t *p, int x, int y, gboolean selected)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
@@ -200,7 +201,7 @@ static inline gboolean call_select(struct parts_t *p, int x, int y, gboolean sel
     return FALSE;
 }
 
-static inline void call_drag_step(struct parts_t *p, int x, int y)
+void call_drag_step(struct parts_t *p, int x, int y)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
@@ -210,7 +211,7 @@ static inline void call_drag_step(struct parts_t *p, int x, int y)
 	(parts_ops[p->type].drag_step)(p, x, y);
 }
 
-static inline void call_drag_fini(struct parts_t *p, int x, int y)
+void call_drag_fini(struct parts_t *p, int x, int y)
 {
     if (p->type < 0 || p->type >= PARTS_NR) {
 	fprintf(stderr, "unknown parts type: %d.\n", p->type);
@@ -248,313 +249,10 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 
 /****/
 
-enum {
-    MODE_EDIT,
-    MODE_RECT,
-    MODE_ARROW,
-    MODE_TEXT,
-    MODE_MASK,
-};
-
-static int mode = MODE_EDIT;
-
-static void button_event_edit(GdkEvent *ev)
-{
-    static int step = 0;
-    static int beg_x = 0, beg_y = 0;
-    static guint32 last_click_time = 0;
-    static struct parts_t *last_click_parts = NULL;
-    
-    enum {
-	STEP_IDLE,
-	STEP_AFTER_PRESS,
-	STEP_MOTION,
-	STEP_EDITING_TEXT,
-	STEP_AFTER_PRESS_TEXT,
-    };
-    
-    switch (step) {
-    case STEP_IDLE:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
-		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
-		    if (p->type == PARTS_BASE)
-			undoable->selp = NULL;
-		    else {
-			undoable->selp = p;
-			step = STEP_AFTER_PRESS;
-		    }
-		    break;
-		}
-	    }
-	}
-	break;
-	
-    case STEP_AFTER_PRESS:
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    if (ep->time - last_click_time < 500 && last_click_parts == undoable->selp && undoable->selp->type == PARTS_TEXT) {
-		/* double click */
-		text_focus(undoable->selp, ep->x, ep->y);
-		step = STEP_EDITING_TEXT;
-	    } else {
-		/* maybe single */
-		last_click_parts = undoable->selp;
-		last_click_time = ep->time;
-		step = STEP_IDLE;
-	    }
-	    break;
-	}
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    GdkEventMotion *ep = &ev->motion;
-	    int dx = ep->x - beg_x;
-	    int dy = ep->y - beg_y;
-	    if (dx < 0)
-		dx = -dx;
-	    if (dy < 0)
-		dy = -dy;
-#define EPSILON 3
-	    if (dx >= EPSILON || dy >= EPSILON) {
-		history_copy_top_of_undoable();
-		struct parts_t *p = undoable->selp;
-		call_drag_step(p, ep->x, ep->y);
-		last_click_parts = NULL;
-		last_click_time = 0;
-		step = STEP_MOTION;
-		break;
-	    }
-#undef EPSILON
-	}
-	break;
-	
-    case STEP_MOTION:
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    struct parts_t *p = undoable->selp;
-	    call_drag_step(p, ep->x, ep->y);
-	    call_drag_fini(p, ep->x, ep->y);
-	    step = STEP_IDLE;
-	    break;
-	}
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    GdkEventMotion *ep = &ev->motion;
-	    struct parts_t *p = undoable->selp;
-	    call_drag_step(p, ep->x, ep->y);
-	    break;
-	}
-	break;
-	
-    case STEP_EDITING_TEXT:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    for (struct parts_t *p = undoable->parts_list_end; p != NULL; p = p->back) {
-		if (call_select(p, ep->x, ep->y, p == undoable->selp)) {
-		    if (p->type == PARTS_BASE) {
-			undoable->selp = NULL;
-			text_unfocus();
-			step = STEP_IDLE;
-		    } else if (p == undoable->selp) {
-			step = STEP_AFTER_PRESS_TEXT;
-		    } else {
-			undoable->selp = p;
-			text_unfocus();
-			step = STEP_AFTER_PRESS;
-		    }
-		    break;
-		}
-	    }
-	}
-	break;
-
-    case STEP_AFTER_PRESS_TEXT:
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    GdkEventButton *ep = &ev->button;
-	    text_focus(undoable->selp, ep->x, ep->y);
-	    step = STEP_EDITING_TEXT;
-	    break;
-	}
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    GdkEventMotion *ep = &ev->motion;
-	    int dx = ep->x - beg_x;
-	    int dy = ep->y - beg_y;
-	    if (dx < 0)
-		dx = -dx;
-	    if (dy < 0)
-		dy = -dy;
-#define EPSILON 3
-	    if (dx >= EPSILON || dy >= EPSILON) {
-		history_copy_top_of_undoable();
-		struct parts_t *p = undoable->selp;
-		call_drag_step(p, ep->x, ep->y);
-		last_click_parts = NULL;
-		last_click_time = 0;
-		text_unfocus();
-		step = STEP_MOTION;
-		break;
-	    }
-#undef EPSILON
-	}
-	break;
-    }
-    
-    gtk_widget_queue_draw(drawable);
-}
-
-static void button_event_rect(GdkEvent *ev)
-{
-    static int step = 0;
-    
-    switch (step) {
-    case 0:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    history_copy_top_of_undoable();
-	    struct history_t *hp = undoable;
-	    
-	    struct parts_t *p = rect_create(ev->button.x, ev->button.y);
-	    history_append_parts(hp, p);
-	    
-	    step++;
-	}
-	break;
-	
-    case 1:
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    undoable->parts_list_end->width = ev->motion.x - undoable->parts_list_end->x;
-	    undoable->parts_list_end->height = ev->motion.y - undoable->parts_list_end->y;
-	    gtk_widget_queue_draw(drawable);
-	    break;
-	}
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    undoable->parts_list_end->width = ev->button.x - undoable->parts_list_end->x;
-	    undoable->parts_list_end->height = ev->button.y - undoable->parts_list_end->y;
-	    gtk_widget_queue_draw(drawable);
-	    step = 0;
-	    break;
-	}
-	break;
-    }
-}
-
-static void button_event_arrow(GdkEvent *ev)
-{
-    static int step = 0;
-    
-    switch (step) {
-    case 0:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    history_copy_top_of_undoable();
-	    struct history_t *hp = undoable;
-	    
-	    struct parts_t *p = arrow_create(ev->button.x, ev->button.y);
-	    history_append_parts(hp, p);
-	    
-	    step++;
-	}
-	break;
-	
-    case 1:
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    undoable->parts_list_end->width = ev->motion.x - undoable->parts_list_end->x;
-	    undoable->parts_list_end->height = ev->motion.y - undoable->parts_list_end->y;
-	    gtk_widget_queue_draw(drawable);
-	    break;
-	}
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    undoable->parts_list_end->width = ev->button.x - undoable->parts_list_end->x;
-	    undoable->parts_list_end->height = ev->button.y - undoable->parts_list_end->y;
-	    gtk_widget_queue_draw(drawable);
-	    step = 0;
-	    break;
-	}
-	break;
-    }
-}
-
-static void button_event_text(GdkEvent *ev)
-{
-    static int step = 0;
-    
-    switch (step) {
-    case 0:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    history_copy_top_of_undoable();
-	    struct history_t *hp = undoable;
-	    
-	    struct parts_t *p = text_create(ev->button.x, ev->button.y);
-	    history_append_parts(hp, p);
-	    text_select(p, ev->button.x, ev->button.y, FALSE);
-	    text_focus(p, ev->button.x, ev->button.y);
-	    hp->selp = p;
-	    
-	    step++;
-	}
-	break;
-	
-    case 1:
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    gtk_widget_queue_draw(drawable);
-	    step = 0;
-	    break;
-	}
-	break;
-    }
-}
-
-static void button_event_mask(GdkEvent *ev)
-{
-    static int step = 0;
-    
-    switch (step) {
-    case 0:
-	if (ev->type == GDK_BUTTON_PRESS && ev->button.button == 1) {
-	    history_copy_top_of_undoable();
-	    struct history_t *hp = undoable;
-	    
-	    struct parts_t *p = mask_create(ev->button.x, ev->button.y);
-	    history_append_parts(hp, p);
-	    
-	    step++;
-	}
-	break;
-	
-    case 1:
-	if (ev->type == GDK_MOTION_NOTIFY) {
-	    undoable->parts_list_end->width = ev->motion.x - undoable->parts_list_end->x;
-	    undoable->parts_list_end->height = ev->motion.y - undoable->parts_list_end->y;
-	    gtk_widget_queue_draw(drawable);
-	    break;
-	}
-	if (ev->type == GDK_BUTTON_RELEASE && ev->button.button == 1) {
-	    undoable->parts_list_end->width = ev->button.x - undoable->parts_list_end->x;
-	    undoable->parts_list_end->height = ev->button.y - undoable->parts_list_end->y;
-	    gtk_widget_queue_draw(drawable);
-	    step = 0;
-	    break;
-	}
-	break;
-    }
-}
 
 static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 {
-    switch (mode) {
-    case MODE_EDIT:
-	button_event_edit(ev);
-	break;
-    case MODE_RECT:
-	button_event_rect(ev);
-	break;
-    case MODE_ARROW:
-	button_event_arrow(ev);
-	break;
-    case MODE_TEXT:
-	button_event_text(ev);
-	break;
-    case MODE_MASK:
-	button_event_mask(ev);
-	break;
-    }
+    mode_handle(ev);
 }
 
 static void delete_it(void)
@@ -624,7 +322,7 @@ static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data
 
 static void mode_cb(GtkToolButton *item, gpointer user_data)
 {
-    mode = GPOINTER_TO_INT(user_data);
+    mode_switch(GPOINTER_TO_INT(user_data));
 }
 
 static cairo_status_t write_png_data(void *closure, const unsigned char *data, unsigned int length)
@@ -888,6 +586,7 @@ int main(int argc, char **argv)
     gtk_widget_show(drawable);
     gtk_container_add(GTK_CONTAINER(evbox), drawable);
     
+    mode_init(drawable);
     text_init(toplevel, drawable);
     
     gtk_main();
