@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpicann 0.90\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-10 00:43+0900\n"
+"POT-Creation-Date: 2020-03-11 06:32+0900\n"
 "PO-Revision-Date: 2020-03-10 00:37+0900\n"
 "Last-Translator:  <masm+github@masm11.me>\n"
 "Language-Team: Japanese <translation-team-ja@lists.sourceforge.net>\n"
@@ -17,38 +17,42 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: ../src/main.c:811
+#: ../src/main.c:363
+msgid "The file already exists. Overwrite it?"
+msgstr "ファイルが既に存在します。上書きしますか？"
+
+#: ../src/main.c:526
 msgid "Export"
 msgstr "エクスポート"
 
-#: ../src/main.c:825
+#: ../src/main.c:540
 msgid "Select"
 msgstr "選択"
 
-#: ../src/main.c:834
+#: ../src/main.c:549
 msgid "Rectangle"
 msgstr "長方形"
 
-#: ../src/main.c:842
+#: ../src/main.c:557
 msgid "Arrow"
 msgstr "矢印"
 
-#: ../src/main.c:850
+#: ../src/main.c:565
 msgid "Text"
 msgstr "テキスト"
 
-#: ../src/main.c:858
+#: ../src/main.c:573
 msgid "Blur"
 msgstr "ぼかし"
 
-#: ../src/settings.c:54
+#: ../src/settings.c:55
 msgid "Color"
 msgstr "色"
 
-#: ../src/settings.c:60
+#: ../src/settings.c:61
 msgid "Font"
 msgstr "フォント"
 
-#: ../src/settings.c:66
+#: ../src/settings.c:67
 msgid "Thickness"
 msgstr "太さ"

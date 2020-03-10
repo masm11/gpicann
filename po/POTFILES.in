@@ -10,4 +10,6 @@ src/rect.c
 src/settings.c
 src/settings.h
 src/shapes.h
+src/state_mgmt.c
+src/state_mgmt.h
 src/text.c

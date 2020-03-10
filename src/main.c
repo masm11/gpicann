@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <gtk/gtk.h>
 
 #include "common.h"
@@ -349,6 +352,20 @@ static void save_as_png(cairo_surface_t *surface)
     
     if (fname == NULL)
 	return;
+    
+    struct stat st;
+    if (stat(fname, &st) == 0) {
+	GtkWidget *dialog3 = gtk_message_dialog_new(
+		GTK_WINDOW(toplevel),
+		GTK_DIALOG_MODAL,
+		GTK_MESSAGE_ERROR,
+		GTK_BUTTONS_OK_CANCEL,
+		_("The file already exists. Overwrite it?"));
+	int res = gtk_dialog_run(GTK_DIALOG(dialog3));
+	gtk_widget_destroy(dialog3);
+	if (res != GTK_RESPONSE_OK)
+	    return;
+    }
     
     FILE *fp = fopen(fname, "wb");
     if (fp == NULL) {

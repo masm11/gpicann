@@ -1,0 +1,58 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-03-11 06:32+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../src/main.c:363
+msgid "The file already exists. Overwrite it?"
+msgstr ""
+
+#: ../src/main.c:526
+msgid "Export"
+msgstr ""
+
+#: ../src/main.c:540
+msgid "Select"
+msgstr ""
+
+#: ../src/main.c:549
+msgid "Rectangle"
+msgstr ""
+
+#: ../src/main.c:557
+msgid "Arrow"
+msgstr ""
+
+#: ../src/main.c:565
+msgid "Text"
+msgstr ""
+
+#: ../src/main.c:573
+msgid "Blur"
+msgstr ""
+
+#: ../src/settings.c:55
+msgid "Color"
+msgstr ""
+
+#: ../src/settings.c:61
+msgid "Font"
+msgstr ""
+
+#: ../src/settings.c:67
+msgid "Thickness"
+msgstr ""
