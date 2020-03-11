@@ -17,7 +17,7 @@ void prepare_icons(void)
 #define NR_ICONS (sizeof icon_table / sizeof icon_table[0])
     
     for (int i = 0; i < NR_ICONS; i++) {
-	char *icon_path = g_strdup_printf("%s/%s.svg", icon_dir, icon_table[i].filename);
+	char *icon_path = g_strdup_printf("%s/%s", icon_dir, icon_table[i].filename);
 	FILE *fp;
 	if ((fp = fopen(icon_path, "wb")) == NULL) {
 	    perror(icon_path);
