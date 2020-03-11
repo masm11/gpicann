@@ -21,7 +21,7 @@ gboolean text_select(struct parts_t *parts, int x, int y, gboolean selected);
 void text_drag_step(struct parts_t *p, int x, int y);
 void text_drag_fini(struct parts_t *parts, int x, int y);
 struct parts_t *text_create(int x, int y);
-gboolean text_filter_keypress(struct parts_t *part, GdkEventKey *ev);
+gboolean text_filter_keypress(GdkEventKey *ev);
 void text_focus_in(void);
 void text_focus_out(void);
 void text_init(GtkWidget *top, GtkWidget *w);

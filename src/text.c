@@ -383,7 +383,7 @@ gboolean text_has_focus(void)
     return focused_parts != NULL;
 }
 
-gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
+gboolean text_filter_keypress(GdkEventKey *ev)
 {
     if (im_context != NULL) {
 	if (focused_parts != NULL) {
@@ -413,7 +413,7 @@ gboolean text_filter_keypress(struct parts_t *parts, GdkEventKey *ev)
 		}
 	    }
 	    if (ev->keyval == GDK_KEY_Return) {
-		insert_string_at_cursor(parts, "\n");
+		insert_string_at_cursor(focused_parts, "\n");
 		gtk_widget_queue_draw(drawable);
 		return TRUE;
 	    }

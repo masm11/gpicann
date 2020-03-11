@@ -314,10 +314,8 @@ static gboolean key_event(GtkWidget *widget, GdkEventKey *ev, gpointer user_data
 	    exit(0);
 	    return TRUE;
 	}
-	if (undoable->selp != NULL && undoable->selp->type == PARTS_TEXT) {
-	    if (text_filter_keypress(undoable->selp, ev))
-		return TRUE;
-	}
+	if (text_filter_keypress(ev))
+	    return TRUE;
     }
     
     return FALSE;
