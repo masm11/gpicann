@@ -10,7 +10,20 @@
 
 ## Installation
 
+### ArchLinux
+
 ```sh
+git clone https://github.com/masm11/gpicann.git
+cd gpicann
+./configure --prefix=/usr
+make
+sudo make install
+```
+
+### Debian
+
+```sh
+sudo apt-get install intltool libgtk-3-dev
 git clone https://github.com/masm11/gpicann.git
 cd gpicann
 ./configure --prefix=/usr
