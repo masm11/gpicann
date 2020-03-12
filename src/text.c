@@ -109,12 +109,45 @@ static int cursor_prev_pos_in_bytes(const char *text, int pos)
 
     glong new_pos = 0;
     gchar *str_till_newpos = g_ucs4_to_utf8(uni_str_total, pos_in_chars_till_pos, NULL, &new_pos, NULL);
-
+    
     g_free(uni_str_till_pos);
     g_free(uni_str_total);
     g_free(str_till_newpos);
 
     return new_pos;
+}
+
+static PangoLayout *make_cursor(PangoLayout *layout, int cursor_pos)
+{
+    layout = pango_layout_copy(layout);
+    
+    PangoAttrList *attr_list = pango_layout_get_attributes(layout);
+    
+    const char *str = pango_layout_get_text(layout);
+    int cursor_next = cursor_next_pos_in_bytes(str, cursor_pos);
+    
+    PangoAttribute *attr;
+    attr = pango_attr_foreground_alpha_new(0);
+    attr->start_index = 0;
+    attr->end_index = strlen(str);
+    pango_attr_list_change(attr_list, attr);
+    
+    attr = pango_attr_background_alpha_new(0);
+    attr->start_index = 0;
+    attr->end_index = strlen(str);
+    pango_attr_list_change(attr_list, attr);
+    
+    attr = pango_attr_background_alpha_new(65535);
+    attr->start_index = cursor_pos;
+    attr->end_index = cursor_next;
+    pango_attr_list_change(attr_list, attr);
+    
+    attr = pango_attr_background_new(0, 0, 0);
+    attr->start_index = cursor_pos;
+    attr->end_index = cursor_next;
+    pango_attr_list_change(attr_list, attr);
+    
+    return layout;
 }
 
 static PangoLayout *make_shadow(PangoLayout *layout)
@@ -130,7 +163,30 @@ static PangoLayout *make_shadow(PangoLayout *layout)
     attr->start_index = 0;
     attr->end_index = strlen(str);
     pango_attr_list_change(attr_list, attr);
+    
     attr = pango_attr_foreground_alpha_new(65535 * 0.05);
+    attr->start_index = 0;
+    attr->end_index = strlen(str);
+    pango_attr_list_change(attr_list, attr);
+    
+    return layout;
+}
+
+static PangoLayout *make_outline(PangoLayout *layout)
+{
+    layout = pango_layout_copy(layout);
+    
+    PangoAttrList *attr_list = pango_layout_get_attributes(layout);
+    
+    const char *str = pango_layout_get_text(layout);
+    
+    PangoAttribute *attr;
+    attr = pango_attr_foreground_new(65535, 65535, 65535);
+    attr->start_index = 0;
+    attr->end_index = strlen(str);
+    pango_attr_list_change(attr_list, attr);
+    
+    attr = pango_attr_foreground_alpha_new(65535);
     attr->start_index = 0;
     attr->end_index = strlen(str);
     pango_attr_list_change(attr_list, attr);
@@ -176,24 +232,23 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	}
     }
     
-    if (parts == focused_parts) {
-	PangoAttribute *curs_bg = pango_attr_foreground_new(0xffff * parts->fg.red, 0xffff * parts->fg.green, 0xffff * parts->fg.blue);
-	PangoAttribute *curs_fg = pango_attr_background_new(0, 0, 0);
-	int cursoring_next = cursor_next_pos_in_bytes(text, cursoring_pos);
-	curs_bg->start_index = cursoring_pos;
-	curs_bg->end_index = cursoring_next;
-	curs_fg->start_index = cursoring_pos;
-	curs_fg->end_index = cursoring_next;
-	pango_attr_list_change(attr_list, curs_bg);
-	pango_attr_list_change(attr_list, curs_fg);
-    }
-
     pango_layout_set_attributes(layout, attr_list);
     
+    PangoLayout *layout_cursor = NULL;
+    if (parts == focused_parts)
+	layout_cursor = make_cursor(layout, cursoring_pos);
     PangoLayout *layout_shadow = make_shadow(layout);
+    PangoLayout *layout_outline = make_outline(layout);
     
 #define DIFF 4.0
 #define NR 16
+    
+    if (layout_cursor != NULL) {
+	cairo_save(cr);
+	cairo_move_to(cr, parts->x, parts->y);
+	pango_cairo_show_layout(cr, layout_cursor);
+	cairo_restore(cr);
+    }
     
     for (int i = 0; i < NR; i++) {
 	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
@@ -205,6 +260,16 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	cairo_restore(cr);
     }
     
+    for (int i = 0; i < NR; i++) {
+	int dx = DIFF * cos(2 * M_PI / NR * i);
+	int dy = DIFF * sin(2 * M_PI / NR * i);
+	cairo_save(cr);
+	cairo_move_to(cr, parts->x + dx, parts->y + dy);
+	cairo_set_source_rgba(cr, 1, 1, 1, 1);
+	pango_cairo_show_layout(cr, layout_outline);
+	cairo_restore(cr);
+    }
+
 #undef NR
 #undef DIFF
     
@@ -216,6 +281,9 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_font_description_free(font_desc);
     pango_attr_list_unref(attr_list);
     g_object_unref(layout_shadow);
+    g_object_unref(layout_outline);
+    if (layout_cursor != NULL)
+	g_object_unref(layout_cursor);
     
     g_free(text);
 }
