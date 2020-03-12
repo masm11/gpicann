@@ -386,6 +386,8 @@ gboolean text_has_focus(void)
 gboolean text_filter_keypress(GdkEventKey *ev)
 {
     if (im_context != NULL) {
+	if (gtk_im_context_filter_keypress (im_context, ev))
+	    return TRUE;
 	if (focused_parts != NULL) {
 	    if (ev->keyval == GDK_KEY_Right) {
 		int cursor_next = cursor_next_pos_in_bytes(focused_parts->text, cursor_pos);
@@ -418,8 +420,6 @@ gboolean text_filter_keypress(GdkEventKey *ev)
 		return TRUE;
 	    }
 	}
-	if (gtk_im_context_filter_keypress (im_context, ev))
-	    return TRUE;
     }
     return FALSE;
 }

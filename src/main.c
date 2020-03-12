@@ -25,6 +25,7 @@ static GtkWidget *toplevel;
  */
 struct history_t *undoable, *redoable;
 
+static GtkWidget *evbox;
 static GtkWidget *drawable;
 
 /**** parts ****/
@@ -255,6 +256,7 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
 
 static void button_event(GtkWidget *evbox, GdkEvent *ev, gpointer user_data)
 {
+    gtk_widget_grab_focus(evbox);
     mode_handle(ev);
 }
 
@@ -503,8 +505,6 @@ int main(int argc, char **argv)
     
     toplevel = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     g_signal_connect_swapped(G_OBJECT(toplevel), "delete-event", G_CALLBACK(exit), 0);
-    gtk_widget_add_events(toplevel, GDK_KEY_PRESS_MASK);
-    g_signal_connect(G_OBJECT(toplevel), "key-press-event", G_CALLBACK(key_event), NULL);
     gtk_widget_show(toplevel);
     
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -567,8 +567,11 @@ int main(int argc, char **argv)
     settings_set_font_changed_callback(font_changed_cb);
     settings_set_thickness_changed_callback(thickness_changed_cb);
     
-    GtkWidget *evbox = gtk_event_box_new();
+    evbox = gtk_event_box_new();
     gtk_widget_add_events(evbox, GDK_KEY_PRESS_MASK);
+    gtk_widget_set_can_focus(evbox, TRUE);
+    gtk_widget_set_focus_on_click(evbox, TRUE);
+    g_signal_connect(G_OBJECT(evbox), "key-press-event", G_CALLBACK(key_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "button-press-event", G_CALLBACK(button_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "button-release-event", G_CALLBACK(button_event), NULL);
     g_signal_connect(G_OBJECT(evbox), "motion-notify-event", G_CALLBACK(button_event), NULL);
