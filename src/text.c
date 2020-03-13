@@ -241,8 +241,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
 #define DIFF 4.0
 #define NR 16
-    
 #define PADDING 32
+    
     int width, height;
     pango_layout_get_size(layout, &width, &height);
     width /= PANGO_SCALE;
@@ -268,17 +268,14 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_move_to(cr1, PADDING, PADDING);
     pango_cairo_show_layout(cr1, layout);
     cairo_restore(cr1);
-    
-    cairo_destroy(cr1);
     cairo_surface_flush(sf1);
-    // cairo_surface_write_to_png(sf1, "test.png");
     
     unsigned char *data2 = g_malloc0(stride * height);	/* shadow */
     for (int y = 0; y < height; y++) {
 	for (int x = 0; x < width; x++) {
 	    unsigned int argb = *(unsigned int *) (data1 + stride * y + x * 4);
 	    unsigned int a = argb >> 24;
-	    argb = (a / 20) << 24;
+	    argb = (a / 20) << 24;	/* * 0.05 */
 	    *(unsigned int *) (data2 + stride * y + x * 4) = argb;
 	}
     }
@@ -294,14 +291,9 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     if (layout_cursor != NULL)
 	pango_cairo_show_layout(cr3, layout_cursor);
     cairo_restore(cr3);
+    cairo_surface_flush(sf3);
     
-    cairo_pattern_t *pat1 = cairo_pattern_create_for_surface(sf1);
     cairo_matrix_t mat;
-    //cairo_get_matrix(cr, &mat);
-    cairo_matrix_init_identity(&mat);
-    cairo_matrix_translate(&mat, -(parts->x - PADDING), -(parts->y - PADDING));
-    cairo_pattern_set_matrix(pat1, &mat);
-    // cairo_pattern_set_extend(pat1, CAIRO_EXTEND_REPEAT);
     
     cairo_pattern_t *pat2 = cairo_pattern_create_for_surface(sf2);
     for (int i = 0; i < NR; i++) {
@@ -320,88 +312,49 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     }
     
     cairo_pattern_t *pat3 = cairo_pattern_create_for_surface(sf3);
-    //cairo_get_matrix(cr, &mat);
     cairo_matrix_init_identity(&mat);
     cairo_matrix_translate(&mat, -(parts->x - PADDING), -(parts->y - PADDING));
     cairo_pattern_set_matrix(pat3, &mat);
-    // cairo_pattern_set_extend(pat1, CAIRO_EXTEND_REPEAT);
     
     cairo_save(cr);
     cairo_set_source(cr, pat3);
     cairo_rectangle(cr, parts->x - PADDING, parts->y - PADDING, width, height);
     cairo_fill(cr);
     cairo_restore(cr);
-
+    
+    cairo_pattern_t *pat1 = cairo_pattern_create_for_surface(sf1);
+    cairo_matrix_init_identity(&mat);
+    cairo_matrix_translate(&mat, -(parts->x - PADDING), -(parts->y - PADDING));
+    cairo_pattern_set_matrix(pat1, &mat);
+    
     cairo_save(cr);
     cairo_set_source(cr, pat1);
     cairo_rectangle(cr, parts->x - PADDING, parts->y - PADDING, width, height);
     cairo_fill(cr);
     cairo_restore(cr);
     
-    // cairo_surface_write_to_png(sf1, "test.png");
-    
-#if 0
-    if (layout_cursor != NULL) {
-	cairo_save(cr);
-	cairo_move_to(cr, parts->x, parts->y);
-	pango_cairo_show_layout(cr, layout_cursor);
-	cairo_restore(cr);
-    }
-    
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * 2 * cos(2 * M_PI / NR * i) + DIFF;
-	int dy = DIFF * 2 * sin(2 * M_PI / NR * i) + DIFF;
-	cairo_save(cr);
-	cairo_move_to(cr, parts->x + dx, parts->y + dy);
-	pango_cairo_show_layout(cr, layout_shadow);
-	cairo_restore(cr);
-    }
-    
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * cos(2 * M_PI / NR * i);
-	int dy = DIFF * sin(2 * M_PI / NR * i);
-	cairo_save(cr);
-	cairo_move_to(cr, parts->x + dx, parts->y + dy);
-	pango_cairo_show_layout(cr, layout_outline);
-	cairo_restore(cr);
-    }
-
-#undef NR
+#undef PADDING
 #undef DIFF
+#undef NR
     
-    cairo_move_to(cr, parts->x, parts->y);
-    pango_cairo_show_layout(cr, layout);
-#endif
-    
-#if 0
-    
-    {
-	int width = 100;
-	int height = 100;
-	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	unsigned char *data = malloc(stride * height);
-	memset(data, 0, stride * height);
-	cairo_surface_t *sf = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, width, height, stride);
-	cairo_t *cr = cairo_create(sf);
-	pango_cairo_show_layout(cr, layout);
-	cairo_surface_flush(sf);
-	cairo_destroy(cr);
-	
-	cairo_surface_write_to_png(sf, "test.png");
-    }
-
-#endif
-    
-#if 0
-    g_object_unref(layout);
-    pango_attr_list_unref(attr_list);
-    g_object_unref(layout_shadow);
+    cairo_pattern_destroy(pat3);
+    cairo_pattern_destroy(pat2);
+    cairo_pattern_destroy(pat1);
+    cairo_destroy(cr3);
+    cairo_surface_destroy(sf3);
+    g_free(data3);
+    cairo_surface_destroy(sf2);
+    g_free(data2);
+    cairo_destroy(cr1);
+    cairo_surface_destroy(sf1);
+    g_free(data1);
     g_object_unref(layout_outline);
+    g_object_unref(layout_shadow);
     if (layout_cursor != NULL)
 	g_object_unref(layout_cursor);
-    
+    pango_attr_list_unref(attr_list);
+    g_object_unref(layout);
     g_free(text);
-#endif
 }
 
 void text_draw_handle(struct parts_t *parts, cairo_t *cr)
@@ -541,6 +494,7 @@ void text_focus(struct parts_t *parts, int x, int y)
     
     PangoFontDescription *font_desc = pango_font_description_from_string(parts->fontname);
     pango_layout_set_font_description(layout, font_desc);
+    pango_font_description_free(font_desc);
     
     int new_cursor_pos, trail;
     if (pango_layout_xy_to_index(layout, (x - parts->x) * PANGO_SCALE, (y - parts->y) * PANGO_SCALE, &new_cursor_pos, &trail)) {
@@ -554,7 +508,6 @@ void text_focus(struct parts_t *parts, int x, int y)
     }
     
     g_object_unref(layout);
-    pango_font_description_free(font_desc);
 }
 
 void text_unfocus(void)
