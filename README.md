@@ -13,11 +13,11 @@
 ### ArchLinux
 
 ```sh
-git clone https://github.com/masm11/gpicann.git
-cd gpicann
-./configure --prefix=/usr
-make
-sudo make install
+mkdir /tmp/gpicann-git
+cd /tmp/gpicann-git
+wget https://raw.githubusercontent.com/masm11/gpicann/master/PKGBUILD
+makepkg
+sudo pacman -U $(ls -1r gpicann-git-*.pkg.tar.xz | head -1)
 ```
 
 ### Debian
