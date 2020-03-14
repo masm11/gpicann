@@ -67,6 +67,10 @@ sudo make install
 
   Click select item on the toolbar, click your item, and press `backspace`.
 
+## License
+
+GPLv3. See [COPYING](COPYING).
+
 ## Author
 
 masm11
