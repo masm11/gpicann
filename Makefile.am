@@ -10,7 +10,7 @@ dist_iconsscalable_DATA = gpicann.svg
 
 install-data-local:
 	for size in 16 20 22 24 32 36 40 48 64 72 96 128 192 256 384 512; do \
-	  convert -size $${size}x$${size} gpicann.svg gpicann.png && \
+	  convert -size $${size}x$${size} $(srcdir)/gpicann.svg gpicann.png && \
 	  $(MKDIR_P) "$(DESTDIR)$(iconsdir)/$${size}x$${size}/apps" && \
 	  $(INSTALL_DATA) gpicann.png "$(DESTDIR)$(iconsdir)/$${size}x$${size}/apps"; \
 	done
