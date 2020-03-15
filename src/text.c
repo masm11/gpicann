@@ -285,6 +285,10 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_layout_get_size(layout, &width, &height);
     width /= PANGO_SCALE;
     height /= PANGO_SCALE;
+    if (parts->width < width)
+	parts->width = width;
+    if (parts->height < height)
+	parts->height = height;
     width += PADDING * 2;
     height += PADDING * 2;
     int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
