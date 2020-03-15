@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 24 24">
-<rect x="0" y="0" width="24" height="24" fill="blue" />
-<path d="M11,9 l3,3 l-4.5,3.5 l3,3 l-9,0 l0,-9 l3,3 Z" fill="red" />
-<path d="M17,7H19A2,2 0 0,1 21,9V17H19V13H17V17H15V9A2,2 0 0,1 17,7M17,9V11H19V9H17Z" fill="red" />
-<path d="M0,0 h24 v2 h-24 z M24,0 v24 h-2 v-24 z M24,24 h-24 v-2 h24 z M0,24 v-24 h2 v24 z" fill="green"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="60" height="60" viewBox="0 0 60 60">
+<path d="M55,30A20,15 -20 1,0 5,30 A20,15 -20 0,0 55,30 Z" fill="#ff77dd" />
+<path d="M11,25A2,2 0 0,0 9,27V33A2,2 0 0,0 11,35H13A2,2 0 0,0 15,33V29H13V33H11V27H15V25H11Z" fill="white" />
+<path d="M15,25V35H17V31H19A2,2 0 0,0 21,29V27A2,2 0 0,0 19,25H9M17,27H19V29H17V27Z" fill="white" />
+<path d="M26,25V27H25V33H26V35H22V33H23V27H22V25H26Z" fill="white" />
+<path d="M29,25A2,2 0 0,0 27,27V33A2,2 0 0,0 29,35H31A2,2 0 0,0 33,33V32H31V33H29V27H31V28H33V27A2,2 0 0,0 31,25H29Z" fill="white" />
+<path d="M35,25A2,2 0 0,0 33,27V35H35V31H37V35H39V27A2,2 0 0,0 37,25H35M35,27H37V29H35V27Z" fill="white" />
+<path d="M39,25V35H41V30L43,35H45V25H43V30L41,25H39Z" fill="white" />
+<path d="M45,25V35H47V30L49,35H51V25H49V30L47,25H45Z" fill="white" />
 </svg>
