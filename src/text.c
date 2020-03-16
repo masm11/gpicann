@@ -208,7 +208,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_font_description_free(font_desc);
     
     PangoAttrList *attr_list = pango_attr_list_new();
-    set_forecolor(attr_list, 0, strlen(text), parts->fg.red, parts->fg.green, parts->fg.blue);
+    // +1 for preedit str coloring.
+    set_forecolor(attr_list, 0, strlen(text) + 1, parts->fg.red, parts->fg.green, parts->fg.blue);
     
     int cursoring_pos = cursor_pos;
     
