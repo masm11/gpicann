@@ -200,7 +200,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     pango_font_description_free(font_desc);
     
     PangoAttrList *attr_list = pango_attr_list_new();
-    // +1 for preedit str coloring.
+    // +1 for preedit str coloring at the end of text.
     set_forecolor(attr_list, 0, strlen(text) + 1, parts->fg.red, parts->fg.green, parts->fg.blue);
     
     int cursoring_pos = cursor_pos;
@@ -218,7 +218,12 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     pango_layout_set_attributes(layout, attr_list);
     
-    PangoRectangle cursor_rect;
+    PangoRectangle cursor_rect = {
+	.x = 0,
+	.y = 0,
+	.width = 0,
+	.height = 0,
+    };
     if (parts == focused_parts) {
 	pango_layout_index_to_pos(layout, cursoring_pos, &cursor_rect);
 	cursor_rect.x /= PANGO_SCALE;
@@ -256,6 +261,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     height += PADDING * 2;
     int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
     
+    cairo_matrix_t mat;
+    
     /* make text */
     
     unsigned char *data0 = g_malloc0(stride * height);
@@ -268,6 +275,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_restore(cr0);
     cairo_surface_flush(sf0);
     
+    cairo_pattern_t *pat0 = cairo_pattern_create_for_surface(sf0);
+    
     /* make outline */
     
     unsigned char *data1 = g_malloc0(stride * height);
@@ -277,37 +286,58 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     for (int i = 0; i < NR; i++) {
 	int dx = DIFF * cos(2 * M_PI / NR * i);
 	int dy = DIFF * sin(2 * M_PI / NR * i);
+	cairo_matrix_init_identity(&mat);
+	cairo_matrix_translate(&mat, -dx, -dy);
+	cairo_pattern_set_matrix(pat0, &mat);
+	
 	cairo_save(cr1);
-	cairo_move_to(cr1, dx + PADDING, dy + PADDING);
-	pango_cairo_show_layout(cr1, layout_outline);
+	cairo_set_source(cr1, pat0);
+	cairo_rectangle(cr1, 0, 0, width, height);
+	cairo_fill(cr1);
 	cairo_restore(cr1);
     }
     
+    cairo_matrix_init_identity(&mat);
+    cairo_pattern_set_matrix(pat0, &mat);
+    
     cairo_save(cr1);
-    cairo_move_to(cr1, PADDING, PADDING);
-    pango_cairo_show_layout(cr1, layout_outline);
+    cairo_set_source(cr1, pat0);
+    cairo_rectangle(cr1, 0, 0, width, height);
+    cairo_fill(cr1);
     cairo_restore(cr1);
+    
     cairo_surface_flush(sf1);
+    
+    for (int y = 0; y < height; y++) {
+	unsigned int *p = (unsigned int *) (data1 + stride * y);
+	for (int x = 0; x < width; x++) {
+	    unsigned int argb = *p;
+	    unsigned int a = argb >> 24;
+	    argb = a << 24 | a << 16 | a << 8 | a;	// alpha'ed white
+	    *p++ = argb;
+	}
+    }
+    
+    cairo_pattern_t *pat1 = cairo_pattern_create_for_surface(sf1);
     
     /* make shadow */
     
     unsigned char *data2 = g_malloc0(stride * height);
     for (int y = 0; y < height; y++) {
+	unsigned int *sp = (unsigned int *) (data1 + stride * y);
+	unsigned int *dp = (unsigned int *) (data2 + stride * y);
 	for (int x = 0; x < width; x++) {
-	    unsigned int argb = *(unsigned int *) (data1 + stride * y + x * 4);
+	    unsigned int argb = *sp++;
 	    unsigned int a = argb >> 24;
-	    argb = (a / 20) << 24;	/* * 0.05 */
-	    *(unsigned int *) (data2 + stride * y + x * 4) = argb;
+	    *dp++ = (a / 20) << 24;	/* * 0.05, black */
 	}
     }
     
     cairo_surface_t *sf2 = cairo_image_surface_create_for_data(data2, CAIRO_FORMAT_ARGB32, width, height, stride);
-    
-    /* draw shadow */
-    
-    cairo_matrix_t mat;
-    
     cairo_pattern_t *pat2 = cairo_pattern_create_for_surface(sf2);
+    
+    /* draw outline shadow */
+    
     for (int i = 0; i < NR; i++) {
 	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
 	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
@@ -340,7 +370,6 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     /* draw outline */
     
-    cairo_pattern_t *pat1 = cairo_pattern_create_for_surface(sf1);
     cairo_matrix_init_identity(&mat);
     cairo_matrix_translate(&mat, -(parts->x - PADDING), -(parts->y - PADDING));
     cairo_pattern_set_matrix(pat1, &mat);
@@ -363,7 +392,6 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     /* draw text */
     
-    cairo_pattern_t *pat0 = cairo_pattern_create_for_surface(sf0);
     cairo_matrix_init_identity(&mat);
     cairo_matrix_translate(&mat, -(parts->x - PADDING), -(parts->y - PADDING));
     cairo_pattern_set_matrix(pat0, &mat);
