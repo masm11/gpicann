@@ -168,21 +168,7 @@ static void set_backalpha(PangoAttrList *attr_list, int start, int end, double a
     pango_attr_list_change(attr_list, attr);
 }
 
-static PangoLayout *make_shadow(PangoLayout *layout)
-{
-    layout = pango_layout_copy(layout);
-    
-    PangoAttrList *attr_list = pango_layout_get_attributes(layout);
-    
-    const char *str = pango_layout_get_text(layout);
-    
-    set_forecolor(attr_list, 0, strlen(str), 0, 0, 0);
-    set_forealpha(attr_list, 0, strlen(str), 0.05);
-    
-    return layout;
-}
-
-static PangoLayout *make_outline(PangoLayout *layout)
+static PangoLayout *make_outline(PangoLayout *layout, int cursor_pos)
 {
     layout = pango_layout_copy(layout);
     
@@ -192,6 +178,12 @@ static PangoLayout *make_outline(PangoLayout *layout)
     
     set_forecolor(attr_list, 0, strlen(str), 1, 1, 1);
     set_forealpha(attr_list, 0, strlen(str), 1);
+    
+    if (cursor_pos >= 0) {
+	/* don't draw outline at the cursored char. */
+	int cursor_next = cursor_next_pos_in_bytes(pango_layout_get_text(layout), cursor_pos);
+	set_forealpha(attr_list, cursor_pos, cursor_next, 0);
+    }
     
     return layout;
 }
@@ -233,7 +225,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	cursor_rect.y /= PANGO_SCALE;
 	cursor_rect.width /= PANGO_SCALE;
 	cursor_rect.height /= PANGO_SCALE;
-	if (cursor_rect.width == 0) {
+	if (cursor_rect.width == 0) {	// at the end of line.
 	    PangoLayout *layout_cursor = pango_layout_copy(layout);
 	    PangoRectangle rect;
 	    pango_layout_set_text(layout_cursor, " ", 1);
@@ -243,9 +235,10 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	}
 	if (cursor_rect.width == 0)
 	    cursor_rect.width = 1;
-    }
-    PangoLayout *layout_shadow = make_shadow(layout);
-    PangoLayout *layout_outline = make_outline(layout);
+    } else
+	cursoring_pos = -1;
+    
+    PangoLayout *layout_outline = make_outline(layout, cursoring_pos);
     
 #define DIFF 4.0
 #define NR 16
@@ -397,7 +390,6 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_surface_destroy(sf0);
     g_free(data0);
     g_object_unref(layout_outline);
-    g_object_unref(layout_shadow);
     pango_attr_list_unref(attr_list);
     g_object_unref(layout);
     g_free(text);
