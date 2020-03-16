@@ -263,7 +263,19 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     height += PADDING * 2;
     int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
     
-    /* make text and outline */
+    /* make text */
+    
+    unsigned char *data0 = g_malloc0(stride * height);
+    cairo_surface_t *sf0 = cairo_image_surface_create_for_data(data0, CAIRO_FORMAT_ARGB32, width, height, stride);
+    cairo_t *cr0 = cairo_create(sf0);
+    
+    cairo_save(cr0);
+    cairo_move_to(cr0, PADDING, PADDING);
+    pango_cairo_show_layout(cr0, layout);
+    cairo_restore(cr0);
+    cairo_surface_flush(sf0);
+    
+    /* make outline */
     
     unsigned char *data1 = g_malloc0(stride * height);
     cairo_surface_t *sf1 = cairo_image_surface_create_for_data(data1, CAIRO_FORMAT_ARGB32, width, height, stride);
@@ -280,7 +292,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     cairo_save(cr1);
     cairo_move_to(cr1, PADDING, PADDING);
-    pango_cairo_show_layout(cr1, layout);
+    pango_cairo_show_layout(cr1, layout_outline);
     cairo_restore(cr1);
     cairo_surface_flush(sf1);
     
@@ -333,17 +345,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	cairo_restore(cr);
     }
     
-    /* draw cursor */
-    
-    cairo_save(cr);
-    cairo_set_source_rgba(cr, 0, 0, 0, 1);
-    cairo_rectangle(cr,
-	    parts->x + cursor_rect.x, parts->y + cursor_rect.y,
-	    cursor_rect.width, cursor_rect.height);
-    cairo_fill(cr);
-    cairo_restore(cr);
-    
-    /* draw text and outline */
+    /* draw outline */
     
     cairo_pattern_t *pat1 = cairo_pattern_create_for_surface(sf1);
     cairo_matrix_init_identity(&mat);
@@ -356,17 +358,44 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_fill(cr);
     cairo_restore(cr);
     
+    /* draw cursor */
+    
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 0, 0, 0, 1);
+    cairo_rectangle(cr,
+	    parts->x + cursor_rect.x, parts->y + cursor_rect.y,
+	    cursor_rect.width, cursor_rect.height);
+    cairo_fill(cr);
+    cairo_restore(cr);
+    
+    /* draw text */
+    
+    cairo_pattern_t *pat0 = cairo_pattern_create_for_surface(sf0);
+    cairo_matrix_init_identity(&mat);
+    cairo_matrix_translate(&mat, -(parts->x - PADDING), -(parts->y - PADDING));
+    cairo_pattern_set_matrix(pat0, &mat);
+    
+    cairo_save(cr);
+    cairo_set_source(cr, pat0);
+    cairo_rectangle(cr, parts->x - PADDING, parts->y - PADDING, width, height);
+    cairo_fill(cr);
+    cairo_restore(cr);
+    
 #undef PADDING
 #undef DIFF
 #undef NR
     
     cairo_pattern_destroy(pat2);
     cairo_pattern_destroy(pat1);
+    cairo_pattern_destroy(pat0);
     cairo_surface_destroy(sf2);
     g_free(data2);
     cairo_destroy(cr1);
     cairo_surface_destroy(sf1);
     g_free(data1);
+    cairo_destroy(cr0);
+    cairo_surface_destroy(sf0);
+    g_free(data0);
     g_object_unref(layout_outline);
     g_object_unref(layout_shadow);
     pango_attr_list_unref(attr_list);
