@@ -15,8 +15,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: install packages
       run: sudo apt-get install -y libgtk-3-dev intltool imagemagick
-    - name: configure
-      run: ./configure
+    - name: autogen
+      run: ./autogen.sh
     - name: make
       run: make
     - name: make check
