@@ -284,8 +284,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_t *cr1 = cairo_create(sf1);
     
     for (int i = 0; i < TCOS_NR; i++) {
-	int dx = DIFF * tcos[i];
-	int dy = DIFF * tsin[i];
+	int dx = DIFF * tcos(i);
+	int dy = DIFF * tsin(i);
 	cairo_matrix_init_identity(&mat);
 	cairo_matrix_translate(&mat, -dx, -dy);
 	cairo_pattern_set_matrix(pat0, &mat);
@@ -346,8 +346,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     /* draw outline shadow */
     
     for (int i = 0; i < TCOS_NR; i++) {
-	int dx = DIFF * tcos[i] + DIFF / 2;
-	int dy = DIFF * tsin[i] + DIFF / 2;
+	int dx = DIFF * tcos(i) + DIFF / 2;
+	int dy = DIFF * tsin(i) + DIFF / 2;
 	
 	cairo_matrix_init_identity(&mat);
 	cairo_matrix_translate(&mat, -(parts->x + dx - PADDING), -(parts->y + dy - PADDING));
@@ -363,8 +363,8 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     /* draw cursor shadow */
     
     for (int i = 0; i < TCOS_NR; i++) {
-	int dx = DIFF * tcos[i] + DIFF / 2;
-	int dy = DIFF * tsin[i] + DIFF / 2;
+	int dx = DIFF * tcos(i) + DIFF / 2;
+	int dy = DIFF * tsin(i) + DIFF / 2;
 	
 	cairo_save(cr);
 	cairo_set_source_rgba(cr, 1, 1, 1, 0.05);

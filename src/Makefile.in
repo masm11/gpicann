@@ -88,6 +88,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+noinst_PROGRAMS = gentcos$(EXEEXT)
 bin_PROGRAMS = gpicann$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -100,7 +101,10 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
+PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
+gentcos_SOURCES = gentcos.c
+gentcos_OBJECTS = gentcos.$(OBJEXT)
+gentcos_LDADD = $(LDADD)
 am_gpicann_OBJECTS = arrow.$(OBJEXT) handle.$(OBJEXT) icons.$(OBJEXT) \
 	main.$(OBJEXT) mask.$(OBJEXT) rect.$(OBJEXT) \
 	settings.$(OBJEXT) text.$(OBJEXT) state_mgmt.$(OBJEXT) \
@@ -124,11 +128,11 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/arrow.Po ./$(DEPDIR)/handle.Po \
-	./$(DEPDIR)/icons.Po ./$(DEPDIR)/main.Po ./$(DEPDIR)/mask.Po \
-	./$(DEPDIR)/rect.Po ./$(DEPDIR)/settings.Po \
-	./$(DEPDIR)/state_mgmt.Po ./$(DEPDIR)/tcos.Po \
-	./$(DEPDIR)/text.Po
+am__depfiles_remade = ./$(DEPDIR)/arrow.Po ./$(DEPDIR)/gentcos.Po \
+	./$(DEPDIR)/handle.Po ./$(DEPDIR)/icons.Po ./$(DEPDIR)/main.Po \
+	./$(DEPDIR)/mask.Po ./$(DEPDIR)/rect.Po \
+	./$(DEPDIR)/settings.Po ./$(DEPDIR)/state_mgmt.Po \
+	./$(DEPDIR)/tcos.Po ./$(DEPDIR)/text.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -142,8 +146,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(gpicann_SOURCES) $(nodist_gpicann_SOURCES)
-DIST_SOURCES = $(gpicann_SOURCES)
+SOURCES = gentcos.c $(gpicann_SOURCES) $(nodist_gpicann_SOURCES)
+DIST_SOURCES = gentcos.c $(gpicann_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -180,7 +184,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = -g -O3
+CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -282,9 +286,9 @@ top_srcdir = @top_srcdir@
 gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c state_mgmt.c tcos.c \
                   common.h handle.h settings.h shapes.h gettext.h tcos.h
 
-nodist_gpicann_SOURCES = icons.inc
-BUILT_SOURCES = icons.inc
-CLEANFILES = icons.inc
+nodist_gpicann_SOURCES = icons.inc tcos.inc
+BUILT_SOURCES = icons.inc tcos.inc
+CLEANFILES = icons.inc tcos.inc
 AM_CFLAGS = $(GTK_CFLAGS) -DLOCALEDIR=\""$(datadir)/locale"\" -DENABLE_NLS=1
 gpicann_LDADD = $(GTK_LIBS)
 all: $(BUILT_SOURCES)
@@ -364,6 +368,13 @@ uninstall-binPROGRAMS:
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 
+clean-noinstPROGRAMS:
+	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
+
+gentcos$(EXEEXT): $(gentcos_OBJECTS) $(gentcos_DEPENDENCIES) $(EXTRA_gentcos_DEPENDENCIES) 
+	@rm -f gentcos$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(gentcos_OBJECTS) $(gentcos_LDADD) $(LIBS)
+
 gpicann$(EXEEXT): $(gpicann_OBJECTS) $(gpicann_DEPENDENCIES) $(EXTRA_gpicann_DEPENDENCIES) 
 	@rm -f gpicann$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(gpicann_OBJECTS) $(gpicann_LDADD) $(LIBS)
@@ -375,6 +386,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arrow.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gentcos.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/handle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icons.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@ # am--include-marker
@@ -533,10 +545,12 @@ maintainer-clean-generic:
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-noinstPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/arrow.Po
+	-rm -f ./$(DEPDIR)/gentcos.Po
 	-rm -f ./$(DEPDIR)/handle.Po
 	-rm -f ./$(DEPDIR)/icons.Po
 	-rm -f ./$(DEPDIR)/main.Po
@@ -592,6 +606,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/arrow.Po
+	-rm -f ./$(DEPDIR)/gentcos.Po
 	-rm -f ./$(DEPDIR)/handle.Po
 	-rm -f ./$(DEPDIR)/icons.Po
 	-rm -f ./$(DEPDIR)/main.Po
@@ -621,24 +636,29 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-binPROGRAMS clean-generic cscopelist-am ctags ctags-am \
-	distclean distclean-compile distclean-generic distclean-tags \
-	distdir dvi dvi-am html html-am info info-am install \
-	install-am install-binPROGRAMS install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
-	ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-binPROGRAMS
+	clean-binPROGRAMS clean-generic clean-noinstPROGRAMS \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-binPROGRAMS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
+
 
 icons.inc: $(wildcard $(top_srcdir)/icons/*.svg)
 	$(srcdir)/genicontable.sh $(wildcard $(top_srcdir)/icons/*.svg) > $@.new
 	mv $@.new $@
+
+tcos.inc: gentcos$(EXEEXT)
+	./gentcos$(EXEEXT) > $@.new
+	mv -f $@.new $@
 
 %.s: %.c
 	$(COMPILE) -S -o $*.s $*.c

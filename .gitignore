@@ -15,3 +15,4 @@ po/Makefile.in
 po/POTFILES
 po/ja.gmo
 po/stamp-it
+src/gentcos

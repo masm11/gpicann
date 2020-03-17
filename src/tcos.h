@@ -3,9 +3,16 @@
 
 #define TCOS_NR	16
 
-extern double tcos[TCOS_NR];
-extern double tsin[TCOS_NR];
+extern const double tsin_table[TCOS_NR];
 
-void tcos_init(void);
+static inline double tsin(int idx)
+{
+    return tsin_table[idx & (TCOS_NR - 1)];
+}
+
+static inline double tcos(int idx)
+{
+    return tsin(idx + TCOS_NR / 4);
+}
 
 #endif	/* ifndef TCOS_H__INCLUDED */

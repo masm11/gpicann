@@ -3,15 +3,8 @@
 
 #include "tcos.h"
 
-/* cos/sin table for shadow */
-double tcos[TCOS_NR];
-double tsin[TCOS_NR];
+/* sin table for shadow */
 
-void tcos_init(void)
-{
-    for (int i = 0; i < TCOS_NR; i++) {
-	double theta = 2 * M_PI / TCOS_NR * i;
-	tcos[i] = cos(theta);
-	tsin[i] = sin(theta);
-    }
-}
+const double tsin_table[TCOS_NR] = {
+#include "tcos.inc"
+};

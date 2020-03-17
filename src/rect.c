@@ -85,8 +85,8 @@ void rect_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 #define DIFF 4.0
 
     for (int i = 0; i < TCOS_NR; i++) {
-	int dx = DIFF * tcos[i] + DIFF / 2;
-	int dy = DIFF * tsin[i] + DIFF / 2;
+	int dx = DIFF * tcos(i) + DIFF / 2;
+	int dy = DIFF * tsin(i) + DIFF / 2;
 	cairo_save(cr);
 	cairo_set_line_width(cr, parts->thickness);
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05);

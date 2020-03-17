@@ -490,8 +490,6 @@ int main(int argc, char **argv)
     bindtextdomain(PACKAGE, LOCALEDIR);
     textdomain(PACKAGE);
     
-    tcos_init();
-    
     gtk_init(&argc, &argv);
     if (argc < 2) {
 	fprintf(stderr, "usage: gpicann <filename.png>\n");
