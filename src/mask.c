@@ -78,6 +78,17 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     
     handle_calc_geom(bufp, HANDLE_NR);
 }
+    
+static gboolean div_9_inited = FALSE;
+static unsigned char div_9[9 * 256];
+static void div_9_init(void)
+{
+    if (!div_9_inited) {
+	div_9_inited = TRUE;
+	for (int i = 0; i < 9 * 256; i++)
+	    div_9[i] = i / 9;
+    }
+}
 
 static void blur_pixel(unsigned char *datap, int x, int y, int width, int height, int stride, unsigned char *data_dst)
 {
@@ -120,10 +131,10 @@ static void blur_pixel(unsigned char *datap, int x, int y, int width, int height
     SUM_UP(datap + dy_d + dx_r);
     
 #undef SUM_UP
-    
-    acc_r /= 9;
-    acc_g /= 9;
-    acc_b /= 9;
+
+    acc_r = div_9[acc_r];
+    acc_g = div_9[acc_g];
+    acc_b = div_9[acc_b];
     *(uint32_t *) data_dst = acc_r << 16 | acc_g << 8 | acc_b;
 }
 
@@ -133,7 +144,10 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     int y = parts->y;
     int width = parts->width;
     int height = parts->height;
-
+    
+    if (!div_9_inited)
+	div_9_init();
+    
     if (width < 0) {
 	x += width;
 	width = -width;
@@ -164,9 +178,10 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     for (int i = 0; i < 24; i++) {
 	for (int y = 0; y < height; y++) {
-	    unsigned char *datap = data + y * stride;
-	    for (int x = 0; x < width; x++, datap += 4)
-		blur_pixel(datap, x, y, width, height, stride, data2 + y * stride + x * 4);
+	    unsigned char *sp = data + y * stride;
+	    unsigned char *dp = data2 + y * stride;
+	    for (int x = 0; x < width; x++, sp += 4, dp += 4)
+		blur_pixel(sp, x, y, width, height, stride, dp);
 	}
 	
 	unsigned char *t = data;
