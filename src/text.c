@@ -309,9 +309,9 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_surface_flush(sf1);
     
     for (int y = 0; y < height; y++) {
-	unsigned int *p = (unsigned int *) (data1 + stride * y);
+	uint32_t *p = (uint32_t *) (data1 + stride * y);
 	for (int x = 0; x < width; x++) {
-	    unsigned int argb = *p;
+	    uint32_t argb = *p;
 	    unsigned int a = argb >> 24;
 	    argb = a << 24 | a << 16 | a << 8 | a;	// alpha'ed white
 	    *p++ = argb;
@@ -324,10 +324,10 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     unsigned char *data2 = g_malloc0(stride * height);
     for (int y = 0; y < height; y++) {
-	unsigned int *sp = (unsigned int *) (data1 + stride * y);
-	unsigned int *dp = (unsigned int *) (data2 + stride * y);
+	uint32_t *sp = (uint32_t *) (data1 + stride * y);
+	uint32_t *dp = (uint32_t *) (data2 + stride * y);
 	for (int x = 0; x < width; x++) {
-	    unsigned int argb = *sp++;
+	    uint32_t argb = *sp++;
 	    unsigned int a = argb >> 24;
 	    *dp++ = (a / 20) << 24;	/* * 0.05, black */
 	}

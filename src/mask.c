@@ -103,12 +103,12 @@ static void blur_pixel(unsigned char *datap, int x, int y, int width, int height
     unsigned int acc_r = 0, acc_g = 0, acc_b = 0;
     
 #define SUM_UP(ptr) (			\
-    argb = *(unsigned int *) (ptr),	\
+    argb = *(uint32_t *) (ptr),		\
     acc_r += (argb >> 16) & 0xff,	\
     acc_g += (argb >>  8) & 0xff,	\
     acc_b += (argb >>  0) & 0xff)
     
-    unsigned int argb;
+    uint32_t argb;
     SUM_UP(datap + dy_u + dx_l);
     SUM_UP(datap + dy_u);
     SUM_UP(datap + dy_u + dx_r);
@@ -124,7 +124,7 @@ static void blur_pixel(unsigned char *datap, int x, int y, int width, int height
     acc_r /= 9;
     acc_g /= 9;
     acc_b /= 9;
-    *(unsigned int *) data_dst = acc_r << 16 | acc_g << 8 | acc_b;
+    *(uint32_t *) data_dst = acc_r << 16 | acc_g << 8 | acc_b;
 }
 
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
