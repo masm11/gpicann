@@ -23,7 +23,7 @@ sudo pacman -U $(ls -1r gpicann-git-*.pkg.tar.xz | head -1)
 ### Debian
 
 ```sh
-sudo apt-get install intltool libgtk-3-dev
+sudo apt-get install intltool libgtk-3-dev imagemagick
 git clone https://github.com/masm11/gpicann.git
 cd gpicann
 ./configure --prefix=/usr
