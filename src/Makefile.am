@@ -18,7 +18,7 @@ icons.inc: $(wildcard $(top_srcdir)/icons/*.svg)
 	mv $@.new $@
 
 tcos.inc: gentcos$(EXEEXT)
-	# ./gentcos$(EXEEXT) > $@.new
+	./gentcos$(EXEEXT) > $@.new
 	mv -f $@.new $@
 
 AM_CFLAGS = $(GTK_CFLAGS) -DLOCALEDIR=\""$(datadir)/locale"\" -DENABLE_NLS=1
