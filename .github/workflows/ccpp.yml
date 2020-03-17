@@ -23,11 +23,11 @@ jobs:
       run: make check
     - name: make distcheck
       run: make distcheck
-    - name: build failed
+    - name: notify if build failed
       if: failure()
       uses: rtCamp/action-slack-notify@v2.0.0
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         SLACK_CHANNEL: "#github"
-        SLACK_USERNAME: "Github Actions"
+        SLACK_USERNAME: "GitHub Actions"
         SLACK_TITLE: "Build failed."
