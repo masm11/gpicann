@@ -66,6 +66,8 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     double total_len = sqrt(
 	    (bufp[HANDLE_POINT].cx - bufp[HANDLE_GRIP].cx) * (bufp[HANDLE_POINT].cx - bufp[HANDLE_GRIP].cx) +
 	    (bufp[HANDLE_POINT].cy - bufp[HANDLE_GRIP].cy) * (bufp[HANDLE_POINT].cy - bufp[HANDLE_GRIP].cy));
+    if (total_len < 1)
+	total_len = 1;
     double triangle_len = p->triangle_len;
     bp->cx = (bufp[HANDLE_GRIP].cx - bufp[HANDLE_POINT].cx) * triangle_len / total_len + bufp[HANDLE_POINT].cx;
     bp->cy = (bufp[HANDLE_GRIP].cy - bufp[HANDLE_POINT].cy) * triangle_len / total_len + bufp[HANDLE_POINT].cy;
@@ -79,6 +81,8 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     double v1x = -v0y;
     double v1y = v0x;
     double v1len = sqrt(v1x * v1x + v1y * v1y); // == total_len
+    if (v1len < 1)
+	v1len = 0;
     bp->cx = wide * v1x / v1len + bufp[HANDLE_STEP].cx;
     bp->cy = wide * v1y / v1len + bufp[HANDLE_STEP].cy;
     bp++;
@@ -87,6 +91,8 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     int v2x = v0y;
     int v2y = -v0x;
     double v2len = sqrt(v2x * v2x + v2y * v2y); // == total_len
+    if (v2len < 1)
+	v2len = 0;
     bp->cx = wide * v2x / v2len + bufp[HANDLE_STEP].cx;
     bp->cy = wide * v2y / v2len + bufp[HANDLE_STEP].cy;
     bp++;
