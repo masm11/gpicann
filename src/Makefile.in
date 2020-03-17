@@ -102,8 +102,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
-gentcos_SOURCES = gentcos.c
-gentcos_OBJECTS = gentcos.$(OBJEXT)
+am_gentcos_OBJECTS = gentcos.$(OBJEXT)
+gentcos_OBJECTS = $(am_gentcos_OBJECTS)
 gentcos_LDADD = $(LDADD)
 am_gpicann_OBJECTS = arrow.$(OBJEXT) handle.$(OBJEXT) icons.$(OBJEXT) \
 	main.$(OBJEXT) mask.$(OBJEXT) rect.$(OBJEXT) \
@@ -146,8 +146,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = gentcos.c $(gpicann_SOURCES) $(nodist_gpicann_SOURCES)
-DIST_SOURCES = gentcos.c $(gpicann_SOURCES)
+SOURCES = $(gentcos_SOURCES) $(gpicann_SOURCES) \
+	$(nodist_gpicann_SOURCES)
+DIST_SOURCES = $(gentcos_SOURCES) $(gpicann_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -283,9 +284,11 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c state_mgmt.c tcos.c \
+gentcos_SOURCES = gentcos.c tcos.h
+gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c state_mgmt.c state_mgmt.h tcos.c \
                   common.h handle.h settings.h shapes.h gettext.h tcos.h
 
+EXTRA_DIST = genicontable.sh
 nodist_gpicann_SOURCES = icons.inc tcos.inc
 BUILT_SOURCES = icons.inc tcos.inc
 CLEANFILES = icons.inc tcos.inc

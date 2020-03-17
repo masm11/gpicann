@@ -1,10 +1,13 @@
 #
 
 noinst_PROGRAMS = gentcos
+gentcos_SOURCES = gentcos.c tcos.h
 
 bin_PROGRAMS = gpicann
-gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c state_mgmt.c tcos.c \
+gpicann_SOURCES = arrow.c handle.c icons.c main.c mask.c rect.c settings.c text.c state_mgmt.c state_mgmt.h tcos.c \
                   common.h handle.h settings.h shapes.h gettext.h tcos.h
+
+EXTRA_DIST = genicontable.sh
 
 nodist_gpicann_SOURCES = icons.inc tcos.inc
 BUILT_SOURCES = icons.inc tcos.inc
