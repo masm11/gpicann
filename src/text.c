@@ -22,6 +22,7 @@
 #include "shapes.h"
 #include "handle.h"
 #include "settings.h"
+#include "tcos.h"
 
 enum {
     HANDLE_TOP_LEFT,
@@ -246,7 +247,6 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     PangoLayout *layout_outline = make_outline(layout, cursoring_pos);
     
 #define DIFF 4.0
-#define NR 16
 #define PADDING 32
     
     int width, height;
@@ -283,9 +283,9 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_surface_t *sf1 = cairo_image_surface_create_for_data(data1, CAIRO_FORMAT_ARGB32, width, height, stride);
     cairo_t *cr1 = cairo_create(sf1);
     
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * cos(2 * M_PI / NR * i);
-	int dy = DIFF * sin(2 * M_PI / NR * i);
+    for (int i = 0; i < TCOS_NR; i++) {
+	int dx = DIFF * tcos[i];
+	int dy = DIFF * tsin[i];
 	cairo_matrix_init_identity(&mat);
 	cairo_matrix_translate(&mat, -dx, -dy);
 	cairo_pattern_set_matrix(pat0, &mat);
@@ -338,9 +338,9 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     /* draw outline shadow */
     
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
-	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
+    for (int i = 0; i < TCOS_NR; i++) {
+	int dx = DIFF * tcos[i] + DIFF / 2;
+	int dy = DIFF * tsin[i] + DIFF / 2;
 	
 	cairo_matrix_init_identity(&mat);
 	cairo_matrix_translate(&mat, -(parts->x + dx - PADDING), -(parts->y + dy - PADDING));
@@ -355,9 +355,9 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     /* draw cursor shadow */
     
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
-	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
+    for (int i = 0; i < TCOS_NR; i++) {
+	int dx = DIFF * tcos[i] + DIFF / 2;
+	int dy = DIFF * tsin[i] + DIFF / 2;
 	
 	cairo_save(cr);
 	cairo_set_source_rgba(cr, 1, 1, 1, 0.05);
@@ -404,7 +404,6 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
 #undef PADDING
 #undef DIFF
-#undef NR
     
     cairo_pattern_destroy(pat2);
     cairo_pattern_destroy(pat1);

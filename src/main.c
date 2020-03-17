@@ -26,6 +26,7 @@
 #include "handle.h"
 #include "settings.h"
 #include "state_mgmt.h"
+#include "tcos.h"
 
 static GtkWidget *toplevel;
 
@@ -488,6 +489,8 @@ int main(int argc, char **argv)
     setlocale(LC_ALL, "");
     bindtextdomain(PACKAGE, LOCALEDIR);
     textdomain(PACKAGE);
+    
+    tcos_init();
     
     gtk_init(&argc, &argv);
     if (argc < 2) {

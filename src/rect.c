@@ -22,6 +22,7 @@
 #include "shapes.h"
 #include "handle.h"
 #include "settings.h"
+#include "tcos.h"
 
 enum {
     HANDLE_TOP_LEFT,
@@ -82,11 +83,10 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
 void rect_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 {
 #define DIFF 4.0
-#define NR 16
 
-    for (int i = 0; i < NR; i++) {
-	int dx = DIFF * cos(2 * M_PI / NR * i) + DIFF / 2;
-	int dy = DIFF * sin(2 * M_PI / NR * i) + DIFF / 2;
+    for (int i = 0; i < TCOS_NR; i++) {
+	int dx = DIFF * tcos[i] + DIFF / 2;
+	int dy = DIFF * tsin[i] + DIFF / 2;
 	cairo_save(cr);
 	cairo_set_line_width(cr, parts->thickness);
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05);
@@ -95,7 +95,6 @@ void rect_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	cairo_restore(cr);
     }
 
-#undef NR
 #undef DIFF
 
     cairo_set_line_width(cr, parts->thickness);
