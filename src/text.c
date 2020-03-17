@@ -322,6 +322,13 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     /* make shadow */
     
+    static gboolean alpha_div_20_inited = FALSE;
+    static unsigned char alpha_div_20[256];
+    if (!alpha_div_20_inited) {
+	alpha_div_20_inited = TRUE;
+	for (int i = 0; i < 256; i++)
+	    alpha_div_20[i] = i / 20;
+    }
     unsigned char *data2 = g_malloc0(stride * height);
     for (int y = 0; y < height; y++) {
 	uint32_t *sp = (uint32_t *) (data1 + stride * y);
@@ -329,7 +336,7 @@ void text_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 	for (int x = 0; x < width; x++) {
 	    uint32_t argb = *sp++;
 	    unsigned int a = argb >> 24;
-	    *dp++ = (a / 20) << 24;	/* * 0.05, black */
+	    *dp++ = alpha_div_20[a] << 24;	/* * 0.05, black */
 	}
     }
     

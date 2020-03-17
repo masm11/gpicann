@@ -11,5 +11,9 @@ icons.inc: $(wildcard $(top_srcdir)/icons/*.svg)
 	$(srcdir)/genicontable.sh $(wildcard $(top_srcdir)/icons/*.svg) > $@.new
 	mv $@.new $@
 
+CFLAGS = -g -O3
 AM_CFLAGS = $(GTK_CFLAGS) -DLOCALEDIR=\""$(datadir)/locale"\" -DENABLE_NLS=1
 gpicann_LDADD = $(GTK_LIBS)
+
+%.s: %.c
+	$(COMPILE) -S -o $*.s $*.c

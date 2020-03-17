@@ -180,7 +180,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@
+CFLAGS = -g -O3
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -639,6 +639,9 @@ uninstall-am: uninstall-binPROGRAMS
 icons.inc: $(wildcard $(top_srcdir)/icons/*.svg)
 	$(srcdir)/genicontable.sh $(wildcard $(top_srcdir)/icons/*.svg) > $@.new
 	mv $@.new $@
+
+%.s: %.c
+	$(COMPILE) -S -o $*.s $*.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
