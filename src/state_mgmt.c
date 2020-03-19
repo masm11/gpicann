@@ -68,6 +68,7 @@ static void mode_edit_handle(struct mode_edit_work_t *w, GdkEvent *ev)
 	    GdkEventButton *ep = &ev->button;
 	    if (ep->time - w->last_click_time < 500 && w->last_click_parts == undoable->selp && undoable->selp->type == PARTS_TEXT) {
 		/* double click */
+		history_copy_top_of_undoable();
 		text_focus(undoable->selp, ep->x, ep->y);
 		w->step = STEP_EDITING_TEXT;
 	    } else {
