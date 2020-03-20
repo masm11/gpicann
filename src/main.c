@@ -262,11 +262,15 @@ static void draw(GtkWidget *drawable, cairo_t *cr, gpointer user_data)
     }
     
     struct parts_t *p = undoable->selp;
-    if (p == NULL)
-	p = undoable->parts_list;
-    settings_set_color(&p->fg);
-    settings_set_font(p->fontname);
-    settings_set_thickness(p->thickness);
+    if (p == NULL) {
+	settings_set_color(NULL);
+	settings_set_font(NULL);
+	settings_set_thickness(-1);
+    } else {
+	settings_set_color(&p->fg);
+	settings_set_font(p->fontname);
+	settings_set_thickness(p->thickness);
+    }
 }
 
 /****/
@@ -440,49 +444,38 @@ static void export(GtkToolButton *item, gpointer user_data)
 
 static void color_changed_cb(const GdkRGBA *rgba)
 {
-    history_copy_top_of_undoable();
-    
-    struct parts_t *p;
-    if (undoable->selp != NULL)
-	p = undoable->selp;
-    else
-	p = undoable->parts_list;
-    
-    p->fg = *rgba;
-    
-    gtk_widget_queue_draw(drawable);
+    if (undoable->selp != NULL) {
+	history_copy_top_of_undoable();
+	undoable->selp->fg = *rgba;
+	
+	gtk_widget_queue_draw(drawable);
+    } else
+	settings_set_default_color(rgba);
 }
 
 static void font_changed_cb(const char *fontname)
 {
-    history_copy_top_of_undoable();
-    
-    struct parts_t *p;
-    if (undoable->selp != NULL)
-	p = undoable->selp;
-    else
-	p = undoable->parts_list;
-    
-    if (p->fontname != NULL)
-	g_free(p->fontname);
-    p->fontname = g_strdup(fontname);
-    
-    gtk_widget_queue_draw(drawable);
+    if (undoable->selp != NULL) {
+	history_copy_top_of_undoable();
+	struct parts_t *p = undoable->selp;
+	if (p->fontname != NULL)
+	    g_free(p->fontname);
+	p->fontname = g_strdup(fontname);
+	
+	gtk_widget_queue_draw(drawable);
+    } else
+	settings_set_default_font(fontname);
 }
 
 static void thickness_changed_cb(int thickness)
 {
-    history_copy_top_of_undoable();
-    
-    struct parts_t *p;
-    if (undoable->selp != NULL)
-	p = undoable->selp;
-    else
-	p = undoable->parts_list;
-    
-    p->thickness = thickness;
-    
-    gtk_widget_queue_draw(drawable);
+    if (undoable->selp != NULL) {
+	history_copy_top_of_undoable();
+	undoable->selp->thickness = thickness;
+	
+	gtk_widget_queue_draw(drawable);
+    } else
+	settings_set_default_thickness(thickness);
 }
 
 int main(int argc, char **argv)

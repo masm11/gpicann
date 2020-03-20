@@ -27,5 +27,8 @@ int settings_get_thickness(void);
 void settings_set_color(const GdkRGBA *rgba);
 void settings_set_font(const char *fontname);
 void settings_set_thickness(int value);
+void settings_set_default_color(const GdkRGBA *rgba);
+void settings_set_default_font(const char *fontname);
+void settings_set_default_thickness(int value);
 
 #endif	/* ifndef SETTINGS_H__INCLUDED */
