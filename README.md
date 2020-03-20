@@ -1,3 +1,4 @@
+![C/C++ CI](https://github.com/masm11/gpicann/workflows/C/C++%20CI/badge.svg?branch=master)
 # Screenshot Annotation Tool
 
 <img src="screenshot.png">
