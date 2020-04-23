@@ -4,7 +4,7 @@ set -e
 
 for file in "$@"; do
     label=$(echo ${file} | sed -e 's|.*/||' -e 's|\.svg$||' -e 's|-|_|g')
-    sed -e 's|"|\\"|g' -e "s|^|static const char ${label}_svg[] = \"|" -e 's|$|";|' < ${file}
+    cat ${file} | tr -d '\012' | sed -e 's|"|\\"|g' -e "s|^|static const char ${label}_svg[] = \"|" -e 's|$|";|'
     echo ''
     echo ''
 done

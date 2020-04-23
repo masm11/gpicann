@@ -478,6 +478,20 @@ static void thickness_changed_cb(int thickness)
 	settings_set_default_thickness(thickness);
 }
 
+static void show_about_dialog(GtkWidget *widget, gpointer user_data)
+{
+    GtkWidget *dialog = gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), PACKAGE_NAME);
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), PACKAGE_VERSION);
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright © 2020 Yuuki Harano");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Screenshot Annotation Tool");
+    gtk_about_dialog_set_license_type(GTK_ABOUT_DIALOG(dialog), GTK_LICENSE_GPL_3_0);
+    gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://github.com/masm11/gpicann");
+    gtk_about_dialog_set_logo_icon_name(GTK_ABOUT_DIALOG(dialog), "gpicann");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
 int main(int argc, char **argv)
 {
     setlocale(LC_ALL, "");
@@ -577,6 +591,21 @@ int main(int argc, char **argv)
     settings_set_color_changed_callback(color_changed_cb);
     settings_set_font_changed_callback(font_changed_cb);
     settings_set_thickness_changed_callback(thickness_changed_cb);
+    
+    GtkWidget *menubar = gtk_menu_bar_new();
+    gtk_box_pack_end(GTK_BOX(hbox), menubar, FALSE, FALSE, 0);
+    gtk_menu_bar_set_pack_direction(GTK_MENU_BAR(menubar), GTK_PACK_DIRECTION_RTL);
+    gtk_widget_show(menubar);
+    GtkWidget *item = gtk_menu_item_new_with_label("︙");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), item);
+    gtk_widget_show(item);
+    GtkWidget *menu = gtk_menu_new();
+    gtk_widget_show(menu);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), menu);
+    GtkWidget *subitem = gtk_menu_item_new_with_label("About gpicann...");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), subitem);
+    gtk_widget_show(subitem);
+    g_signal_connect(G_OBJECT(subitem), "activate", G_CALLBACK(show_about_dialog), NULL);
     
     evbox = gtk_event_box_new();
     gtk_widget_add_events(evbox, GDK_KEY_PRESS_MASK);

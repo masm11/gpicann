@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([gpicann], [0.90], [masm+github@masm11.me])
+AC_INIT([gpicann], [0.91], [masm+github@masm11.me])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/settings.h])
 AC_CONFIG_HEADERS([config.h])
@@ -29,5 +29,5 @@ AC_SUBST(GETTEXT_PACKAGE)
 
 PKG_CHECK_MODULES(GTK, [gtk+-3.0])
 
-AC_CONFIG_FILES([src/Makefile po/Makefile.in Makefile])
+AC_CONFIG_FILES([icons/Makefile src/Makefile po/Makefile.in Makefile])
 AC_OUTPUT

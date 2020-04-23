@@ -1,12 +1,12 @@
 
-SUBDIRS = src po
+SUBDIRS = icons src po
 
 applicationsdir = $(datarootdir)/applications
 dist_applications_DATA = gpicann.desktop
 
 iconsdir = $(datarootdir)/icons/hicolor
 iconsscalabledir = $(iconsdir)/scalable/apps
-dist_iconsscalable_DATA = gpicann.svg
+iconsscalable_DATA = icons/gpicann.svg
 
 install-data-local:
 	for size in 16 20 22 24 32 36 40 48 64 72 96 128 192 256 384 512; do \
