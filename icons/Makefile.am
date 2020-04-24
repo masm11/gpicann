@@ -1,1 +1,1 @@
-dist_noinst_DATA = *.svg
+EXTRA_DIST = *.svg
