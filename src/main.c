@@ -602,7 +602,7 @@ int main(int argc, char **argv)
     GtkWidget *menu = gtk_menu_new();
     gtk_widget_show(menu);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), menu);
-    GtkWidget *subitem = gtk_menu_item_new_with_label("About gpicann...");
+    GtkWidget *subitem = gtk_menu_item_new_with_label(_("About gpicann..."));
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), subitem);
     gtk_widget_show(subitem);
     g_signal_connect(G_OBJECT(subitem), "activate", G_CALLBACK(show_about_dialog), NULL);

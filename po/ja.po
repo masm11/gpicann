@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpicann 0.90\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-11 06:53+0900\n"
+"POT-Creation-Date: 2020-04-25 21:55+0900\n"
 "PO-Revision-Date: 2020-03-10 00:37+0900\n"
 "Last-Translator:  <masm+github@masm11.me>\n"
 "Language-Team: Japanese <translation-team-ja@lists.sourceforge.net>\n"
@@ -17,54 +17,58 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: ../src/main.c:343
+#: ../src/main.c:365
 msgid "Save as PNG"
 msgstr "PNGで保存"
 
-#: ../src/main.c:346
+#: ../src/main.c:368
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: ../src/main.c:347
+#: ../src/main.c:369
 msgid "OK"
 msgstr "OK"
 
-#: ../src/main.c:363
+#: ../src/main.c:385
 msgid "The file already exists. Overwrite it?"
 msgstr "ファイルが既に存在します。上書きしますか？"
 
-#: ../src/main.c:526
+#: ../src/main.c:549
 msgid "Export"
 msgstr "エクスポート"
 
-#: ../src/main.c:540
+#: ../src/main.c:565
 msgid "Select"
 msgstr "選択"
 
-#: ../src/main.c:549
+#: ../src/main.c:566
 msgid "Rectangle"
 msgstr "長方形"
 
-#: ../src/main.c:557
+#: ../src/main.c:567
 msgid "Arrow"
 msgstr "矢印"
 
-#: ../src/main.c:565
+#: ../src/main.c:568
 msgid "Text"
 msgstr "テキスト"
 
-#: ../src/main.c:573
+#: ../src/main.c:569
 msgid "Blur"
 msgstr "ぼかし"
 
-#: ../src/settings.c:55
+#: ../src/main.c:605
+msgid "About gpicann..."
+msgstr "gpicann について..."
+
+#: ../src/settings.c:185
 msgid "Color"
 msgstr "色"
 
-#: ../src/settings.c:61
+#: ../src/settings.c:191
 msgid "Font"
 msgstr "フォント"
 
-#: ../src/settings.c:67
+#: ../src/settings.c:197
 msgid "Thickness"
 msgstr "太さ"
