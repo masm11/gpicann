@@ -123,26 +123,26 @@ static void grad_region(unsigned char *data, int width, int height, int stride,
 	{ rgb1 >> 16, rgb1 >> 8, rgb1 >> 0 },
 	{ rgb2 >> 16, rgb2 >> 8, rgb2 >> 0 },
 	{ rgb3 >> 16, rgb3 >> 8, rgb3 >> 0 },
-    };
+    }, top[rw], bot[rw];
+    
+    for (int dx = 0; dx < rw; dx++) {
+	top[dx].r = (rgb[0].r * (rw - dx) + rgb[1].r * dx) / rw;
+	top[dx].g = (rgb[0].g * (rw - dx) + rgb[1].g * dx) / rw;
+	top[dx].b = (rgb[0].b * (rw - dx) + rgb[1].b * dx) / rw;
+    }
+    
+    for (int dx = 0; dx < rw; dx++) {
+	bot[dx].r = (rgb[2].r * (rw - dx) + rgb[3].r * dx) / rw;
+	bot[dx].g = (rgb[2].g * (rw - dx) + rgb[3].g * dx) / rw;
+	bot[dx].b = (rgb[2].b * (rw - dx) + rgb[3].b * dx) / rw;
+    }
     
     for (int dy = 0; dy < rh; dy++) {
 	for (int dx = 0; dx < rw; dx++) {
-	    unsigned char top_r, top_g, top_b;
-	    unsigned char bot_r, bot_g, bot_b;
-	    
-	    top_r = (rgb[0].r * (rw - dx) + rgb[1].r * dx) / rw;
-	    top_g = (rgb[0].g * (rw - dx) + rgb[1].g * dx) / rw;
-	    top_b = (rgb[0].b * (rw - dx) + rgb[1].b * dx) / rw;
-	    
-	    bot_r = (rgb[2].r * (rw - dx) + rgb[3].r * dx) / rw;
-	    bot_g = (rgb[2].g * (rw - dx) + rgb[3].g * dx) / rw;
-	    bot_b = (rgb[2].b * (rw - dx) + rgb[3].b * dx) / rw;
-	    
 	    unsigned char mid_r, mid_g, mid_b;
-	    
-	    mid_r = (top_r * (rh - dy) + bot_r * dy) / rh;
-	    mid_g = (top_g * (rh - dy) + bot_g * dy) / rh;
-	    mid_b = (top_b * (rh - dy) + bot_b * dy) / rh;
+	    mid_r = (top[dx].r * (rh - dy) + bot[dx].r * dy) / rh;
+	    mid_g = (top[dx].g * (rh - dy) + bot[dx].g * dy) / rh;
+	    mid_b = (top[dx].b * (rh - dy) + bot[dx].b * dy) / rh;
 	    
 	    uint32_t mid_rgb = mid_r << 16 | mid_g << 8 | mid_b;
 	    *(uint32_t *) (data + stride * (ry + dy) + (rx + dx) * 4) = mid_rgb;
