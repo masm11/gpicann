@@ -79,64 +79,75 @@ static void make_handle_geoms(struct parts_t *p, struct handle_t *bufp)
     
     handle_calc_geom(bufp, HANDLE_NR);
 }
-    
-static gboolean div_9_inited = FALSE;
-static unsigned char div_9[9 * 256];
-static void div_9_init(void)
+
+static unsigned int avg_color(unsigned char *data, int width, int height, int stride, int cx, int cy)
 {
-    if (!div_9_inited) {
-	div_9_inited = TRUE;
-	for (int i = 0; i < 9 * 256; i++)
-	    div_9[i] = i / 9;
+    int beg_x = cx - 32 / 2;
+    int end_x = cx + 32 / 2;
+    int beg_y = cy - 32 / 2;
+    int end_y = cy + 32 / 2;
+    if (beg_x < 0)
+	beg_x = 0;
+    if (beg_y < 0)
+	beg_y = 0;
+    if (end_x >= width)
+	end_x = width;
+    if (end_y >= height)
+	end_y = height;
+    
+    unsigned long avg_r = 0, avg_g = 0, avg_b = 0;
+    unsigned int n = 0;
+    for (int y = beg_y; y < end_y; y++) {
+	unsigned char *p = data + stride * y + beg_x * 4;
+	for (int x = beg_x; x < end_x; x++) {
+	    unsigned int rgb = *(uint32_t *) p;
+	    avg_r += (rgb >> 16) & 0xff;
+	    avg_g += (rgb >>  8) & 0xff;
+	    avg_b += (rgb >>  0) & 0xff;
+	    n++;
+	    p += 4;
+	}
     }
+    
+    return (avg_r / n) << 16 | (avg_g / n) << 8 | (avg_b / n);
 }
 
-static void blur_pixel(unsigned char *datap, int x, int y, int width, int height, int stride, unsigned char *data_dst)
+static void grad_region(unsigned char *data, int width, int height, int stride,
+	int rx, int ry, int rw, int rh,
+	unsigned int rgb0, unsigned int rgb1, unsigned int rgb2, unsigned int rgb3)
 {
-    int dx_l, dx_r, dy_u, dy_d;
+    struct {
+	unsigned char r, g, b;
+    } rgb[4] = {
+	{ rgb0 >> 16, rgb0 >> 8, rgb0 >> 0 },
+	{ rgb1 >> 16, rgb1 >> 8, rgb1 >> 0 },
+	{ rgb2 >> 16, rgb2 >> 8, rgb2 >> 0 },
+	{ rgb3 >> 16, rgb3 >> 8, rgb3 >> 0 },
+    }, top[rw], bot[rw];
     
-    if (unlikely(x == 0))
-	dx_l = 0;
-    else
-	dx_l = -4;
-    if (likely(x + 1 < width))
-	dx_r = 4;
-    else
-	dx_r = 0;
-    if (unlikely(y == 0))
-	dy_u = 0;
-    else
-	dy_u = -stride;
-    if (likely(y + 1 < height))
-	dy_d = stride;
-    else
-	dy_d = 0;
+    for (int dx = 0; dx < rw; dx++) {
+	top[dx].r = (rgb[0].r * (rw - dx) + rgb[1].r * dx) / rw;
+	top[dx].g = (rgb[0].g * (rw - dx) + rgb[1].g * dx) / rw;
+	top[dx].b = (rgb[0].b * (rw - dx) + rgb[1].b * dx) / rw;
+    }
     
-    unsigned int acc_r = 0, acc_g = 0, acc_b = 0;
+    for (int dx = 0; dx < rw; dx++) {
+	bot[dx].r = (rgb[2].r * (rw - dx) + rgb[3].r * dx) / rw;
+	bot[dx].g = (rgb[2].g * (rw - dx) + rgb[3].g * dx) / rw;
+	bot[dx].b = (rgb[2].b * (rw - dx) + rgb[3].b * dx) / rw;
+    }
     
-#define SUM_UP(ptr) (			\
-    argb = *(uint32_t *) (ptr),		\
-    acc_r += (argb >> 16) & 0xff,	\
-    acc_g += (argb >>  8) & 0xff,	\
-    acc_b += (argb >>  0) & 0xff)
-    
-    uint32_t argb;
-    SUM_UP(datap + dy_u + dx_l);
-    SUM_UP(datap + dy_u);
-    SUM_UP(datap + dy_u + dx_r);
-    SUM_UP(datap + dx_l);
-    SUM_UP(datap);
-    SUM_UP(datap + dx_r);
-    SUM_UP(datap + dy_d + dx_l);
-    SUM_UP(datap + dy_d);
-    SUM_UP(datap + dy_d + dx_r);
-    
-#undef SUM_UP
-
-    acc_r = div_9[acc_r];
-    acc_g = div_9[acc_g];
-    acc_b = div_9[acc_b];
-    *(uint32_t *) data_dst = acc_r << 16 | acc_g << 8 | acc_b;
+    for (int dy = 0; dy < rh; dy++) {
+	for (int dx = 0; dx < rw; dx++) {
+	    unsigned char mid_r, mid_g, mid_b;
+	    mid_r = (top[dx].r * (rh - dy) + bot[dx].r * dy) / rh;
+	    mid_g = (top[dx].g * (rh - dy) + bot[dx].g * dy) / rh;
+	    mid_b = (top[dx].b * (rh - dy) + bot[dx].b * dy) / rh;
+	    
+	    uint32_t mid_rgb = mid_r << 16 | mid_g << 8 | mid_b;
+	    *(uint32_t *) (data + stride * (ry + dy) + (rx + dx) * 4) = mid_rgb;
+	}
+    }
 }
 
 void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
@@ -146,9 +157,9 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     int width = parts->width;
     int height = parts->height;
     
-    if (!div_9_inited)
-	div_9_init();
-    
+    if (width == 0 || height == 0)
+	return;
+
     if (width < 0) {
 	x += width;
 	width = -width;
@@ -160,7 +171,6 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
 
     int stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, width);
     unsigned char *data = g_malloc(stride * height);
-    unsigned char *data2 = g_malloc(stride * height);
     
     cairo_pattern_t *pat = cairo_pattern_create_for_surface(cairo_get_target(cr));
     cairo_matrix_t mat;
@@ -177,19 +187,35 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     
     cairo_pattern_destroy(pat);
     
-    for (int i = 0; i < 24; i++) {
-	for (int y = 0; y < height; y++) {
-	    unsigned char *sp = data + y * stride;
-	    unsigned char *dp = data2 + y * stride;
-	    for (int x = 0; x < width; x++, sp += 4, dp += 4)
-		blur_pixel(sp, x, y, width, height, stride, dp);
-	}
-	
-	unsigned char *t = data;
-	data = data2;
-	data2 = t;
+    int nr_x, nr_y;
+    nr_x = width / 32;
+    nr_y = height / 32;
+    if (nr_x < 2)
+	nr_x = 2;
+    if (nr_y < 2)
+	nr_y = 2;
+    int xs[nr_x + 1], ys[nr_y + 1];
+    for (int i = 0; i < nr_x; i++)
+	xs[i] = width * i / nr_x;
+    for (int i = 0; i < nr_y; i++)
+	ys[i] = height * i / nr_y;
+    xs[nr_x] = width;
+    ys[nr_y] = height;
+    
+    unsigned int rgb[nr_y + 1][nr_x + 1];
+    for (int j = 0; j <= nr_y; j++) {
+	for (int i = 0; i <= nr_x; i++)
+	    rgb[j][i] = avg_color(data, width, height, stride, xs[i], ys[j]);
     }
-
+    
+    for (int j = 0; j < nr_y; j++) {
+	for (int i = 0; i < nr_x; i++) {
+	    grad_region(data, width, height, stride,
+		    xs[i], ys[j], xs[i + 1] - xs[i], ys[j + 1] - ys[j],
+		    rgb[j][i], rgb[j][i + 1], rgb[j + 1][i], rgb[j + 1][i + 1]);
+	}
+    }
+    
     cairo_surface_t *cs2 = cairo_image_surface_create_for_data(data, CAIRO_FORMAT_RGB24, width, height, stride);
     cairo_pattern_t *pat2 = cairo_pattern_create_for_surface(cs2);
     cairo_matrix_t mat2;
@@ -207,7 +233,6 @@ void mask_draw(struct parts_t *parts, cairo_t *cr, gboolean selected)
     cairo_surface_destroy(cs2);
     
     g_free(data);
-    g_free(data2);
 }
 
 void mask_draw_handle(struct parts_t *parts, cairo_t *cr)
