@@ -442,6 +442,29 @@ static void export(GtkToolButton *item, gpointer user_data)
     cairo_surface_destroy(surface);
 }
 
+static void copy(GtkToolButton *item, gpointer user_data)
+{
+    int width = undoable->parts_list->width;
+    int height = undoable->parts_list->height;
+    cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
+    cairo_t *cr = cairo_create(surface);
+
+    for (struct parts_t *lp = undoable->parts_list; lp != NULL; lp = lp->next) {
+    cairo_save(cr);
+    call_draw(lp, cr, FALSE);
+    cairo_restore(cr);
+    }
+    cairo_surface_flush(surface);
+
+    GtkClipboard *clip = gtk_clipboard_get (GDK_SELECTION_CLIPBOARD);
+    GdkPixbuf *pixbuf = gdk_pixbuf_get_from_surface (surface, 0, 0, width, height);
+    gtk_clipboard_set_image (clip, pixbuf);
+    g_object_unref (pixbuf);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+
+}
+
 static void color_changed_cb(const GdkRGBA *rgba)
 {
     if (undoable->selp != NULL) {
@@ -547,10 +570,18 @@ int main(int argc, char **argv)
     {
 	GtkToolItem *item = gtk_tool_button_new(NULL, "Export");
 	gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), _("Export"));
-	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "file-export");
+	gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "file-export-symbolic");
 	g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(export), NULL);
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
 	gtk_widget_show(GTK_WIDGET(item));
+    }
+    {
+    GtkToolItem *item = gtk_tool_button_new(NULL, "Copy");
+    gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(item), _("Copy"));
+    gtk_tool_button_set_icon_name(GTK_TOOL_BUTTON(item), "copy-symbolic");
+    g_signal_connect(G_OBJECT(item), "clicked", G_CALLBACK(copy), NULL);
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), item, -1);
+    gtk_widget_show(GTK_WIDGET(item));
     }
     {
 	GtkToolItem *item = gtk_separator_tool_item_new();
@@ -562,11 +593,11 @@ int main(int argc, char **argv)
 	const char *icon_name;
 	int mode;
     } mode_buttons[] = {
-	{ _("Select"),    "select",                  MODE_EDIT },
-	{ _("Rectangle"), "rectangle-outline",       MODE_RECT },
-	{ _("Arrow"),     "arrow-bottom-left-thick", MODE_ARROW },
-	{ _("Text"),      "format-text",             MODE_TEXT },
-	{ _("Blur"),      "blur",                    MODE_MASK },
+	{ _("Select"),    "select-symbolic",                  MODE_EDIT },
+	{ _("Rectangle"), "rectangle-outline-symbolic",       MODE_RECT },
+	{ _("Arrow"),     "arrow-bottom-left-thick-symbolic", MODE_ARROW },
+	{ _("Text"),      "format-text-symbolic",             MODE_TEXT },
+	{ _("Blur"),      "blur-symbolic",                    MODE_MASK },
     };
     GtkRadioToolButton *last_radio_tool_button = NULL;
     for (int i = 0; i < sizeof(mode_buttons) / sizeof(mode_buttons[0]); i++) {
