@@ -1,2 +1,2 @@
-ICONS = arrow-bottom-left-thick blur file-export format-text gpicann image-edit rectangle-outline select
-EXTRA_DIST = $(addsuffix -symbolic.svg, $(ICONS))
+ICONS = arrow-bottom-left-thick-symbolic blur-symbolic file-export-symbolic format-text-symbolic gpicann image-edit-symbolic rectangle-outline-symbolic select-symbolic
+EXTRA_DIST = $(addsuffix .svg, $(ICONS))
